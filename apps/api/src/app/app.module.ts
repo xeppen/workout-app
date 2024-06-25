@@ -2,8 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UsersController } from './users.controller';
-import { UsersModule } from './users.module';
+import { UsersController } from './users/users.controller';
 import { UsersModule } from './users/users.module';
 import { WorkoutPlansModule } from './workout-plans/workout-plans.module';
 import { ExercisesModule } from './exercises/exercises.module';

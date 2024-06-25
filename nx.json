@@ -4,8 +4,7 @@
     "api": "apps/api",
     "api-e2e": "apps/api-e2e",
     "frontend": "apps/frontend",
-    "frontend-e2e": "apps/frontend-e2e",
-    "shared-models": "libs/shared-models"
+    "frontend-e2e": "apps/frontend-e2e"
   },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
