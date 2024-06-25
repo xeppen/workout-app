@@ -1,0 +1,24 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@workout-app/api": ["apps/api/src/main.ts"],
+      "@workout-app/frontend": ["apps/frontend/src/pages/_app.tsx"],
+      "@workout-app/shared-models": ["libs/shared-models/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}
