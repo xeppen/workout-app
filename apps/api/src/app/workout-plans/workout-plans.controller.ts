@@ -3,9 +3,9 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
+  Put,
 } from '@nestjs/common';
 import { WorkoutPlansService } from './workout-plans.service';
 import { CreateWorkoutPlanDto } from './dto/create-workout-plan.dto';
@@ -27,19 +27,19 @@ export class WorkoutPlansController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.workoutPlansService.findOne(id.toString());
+    return this.workoutPlansService.findOne(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(
     @Param('id') id: string,
     @Body() updateWorkoutPlanDto: UpdateWorkoutPlanDto
   ) {
-    return this.workoutPlansService.update(id.toString(), updateWorkoutPlanDto);
+    return this.workoutPlansService.update(id, updateWorkoutPlanDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.workoutPlansService.remove(id.toString());
+    return this.workoutPlansService.remove(id);
   }
 }

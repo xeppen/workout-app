@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkoutPlan } from './entities/workout-plan.entity';
-import { ExerciseInPlan } from './entities/exercise-in-plan.entity';
 import { CreateWorkoutPlanDto } from './dto/create-workout-plan.dto';
+import { ExerciseInPlan } from './entities/exercise-in-plan.entity';
 import { UpdateWorkoutPlanDto } from './dto/update-workout-plan.dto';
 
 @Injectable()
@@ -18,30 +18,35 @@ export class WorkoutPlansService {
   async create(
     createWorkoutPlanDto: CreateWorkoutPlanDto
   ): Promise<WorkoutPlan> {
-    const workoutPlan = this.workoutPlanRepository.create(createWorkoutPlanDto);
+    const { exercises, ...workoutPlanData } = createWorkoutPlanDto;
+
+    const workoutPlan = this.workoutPlanRepository.create(workoutPlanData);
     const savedWorkoutPlan = await this.workoutPlanRepository.save(workoutPlan);
 
-    if (createWorkoutPlanDto.exercises) {
-      const exercises = createWorkoutPlanDto.exercises.map((exercise) =>
-        this.exerciseInPlanRepository.create({
-          ...exercise,
-          workoutPlan: savedWorkoutPlan,
-        })
-      );
-      await this.exerciseInPlanRepository.save(exercises);
-    }
+    const exercisesInPlan = exercises.map((exercise) =>
+      this.exerciseInPlanRepository.create({
+        ...exercise,
+        workoutPlan: savedWorkoutPlan,
+      })
+    );
+
+    await this.exerciseInPlanRepository.save(exercisesInPlan);
 
     return this.findOne(savedWorkoutPlan.id);
   }
 
   async findAll(): Promise<WorkoutPlan[]> {
-    return this.workoutPlanRepository.find({ relations: ['exercises'] });
+    return await this.workoutPlanRepository.find({
+      relations: ['user', 'exercises'],
+      select: ['id', 'name', 'description', 'userId'],
+    });
   }
 
   async findOne(id: string): Promise<WorkoutPlan> {
-    return this.workoutPlanRepository.findOne({
+    return await this.workoutPlanRepository.findOne({
       where: { id },
-      relations: ['exercises'],
+      relations: ['user', 'exercises'],
+      select: ['id', 'name', 'description', 'userId'],
     });
   }
 

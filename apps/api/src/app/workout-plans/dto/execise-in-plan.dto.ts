@@ -5,15 +5,12 @@ export class ExerciseInPlanDto {
   @IsNotEmpty()
   exerciseId: string;
 
-  @IsInt()
-  @Min(1)
+  @IsNotEmpty()
   sets: number;
 
-  @IsInt()
-  @Min(1)
+  @IsNotEmpty()
   reps: number;
 
-  @IsInt()
-  @Min(0)
-  restTime: number; // in seconds
+  @IsNotEmpty()
+  restTime: number;
 }

@@ -11,6 +11,10 @@ export class CreateWorkoutPlanDto {
   @IsNotEmpty()
   description: string;
 
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ExerciseInPlanDto)

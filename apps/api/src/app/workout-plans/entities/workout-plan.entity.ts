@@ -6,8 +6,8 @@ import {
   OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { WorkoutSession } from '../../workout-sessions/entities/workout-session.entity';
 import { ExerciseInPlan } from './exercise-in-plan.entity';
+import { WorkoutSession } from '../../workout-sessions/entities/workout-session.entity';
 
 @Entity()
 export class WorkoutPlan {
@@ -17,17 +17,14 @@ export class WorkoutPlan {
   @Column()
   name: string;
 
-  @Column('text')
+  @Column()
   description: string;
+
+  @Column()
+  userId: string;
 
   @ManyToOne(() => User, (user) => user.workoutPlans)
   user: User;
-
-  @OneToMany(
-    () => WorkoutSession,
-    (workoutSession) => workoutSession.workoutPlan
-  )
-  workoutSessions: WorkoutSession[];
 
   @OneToMany(
     () => ExerciseInPlan,
@@ -35,4 +32,10 @@ export class WorkoutPlan {
     { cascade: true }
   )
   exercises: ExerciseInPlan[];
+
+  @OneToMany(
+    () => WorkoutSession,
+    (workoutSession) => workoutSession.workoutPlan
+  )
+  workoutSessions: WorkoutSession[];
 }

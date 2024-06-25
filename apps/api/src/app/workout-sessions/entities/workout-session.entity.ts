@@ -17,19 +17,24 @@ export class WorkoutSession {
   @ManyToOne(() => User, (user) => user.workoutSessions)
   user: User;
 
+  @Column()
+  userId: string;
+
   @ManyToOne(() => WorkoutPlan, (workoutPlan) => workoutPlan.workoutSessions)
   workoutPlan: WorkoutPlan;
+
+  @Column()
+  workoutPlanId: string;
 
   @Column()
   date: Date;
 
   @OneToMany(
     () => ExercisePerformed,
-    (exercisePerformed) => exercisePerformed.workoutSession,
-    { cascade: true }
+    (exercisePerformed) => exercisePerformed.workoutSession
   )
   exercisesPerformed: ExercisePerformed[];
 
   @Column({ nullable: true })
-  notes: string;
+  notes?: string;
 }
