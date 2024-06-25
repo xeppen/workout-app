@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { typeOrmConfig } from '../config/typeorm.config';
 import { UsersController } from './users/users.controller';
 import { UsersModule } from './users/users.module';
 import { WorkoutPlansModule } from './workout-plans/workout-plans.module';
@@ -11,6 +13,7 @@ import { ProgressRecordsModule } from './progress-records/progress-records.modul
 
 @Module({
   imports: [
+    TypeOrmModule.forRoot(typeOrmConfig),
     UsersModule,
     WorkoutPlansModule,
     ExercisesModule,
