@@ -15,9 +15,13 @@ import { User } from '../users/entities/user.entity';
 import { ProgressRecord } from '../progress-records/entities/progress-record.entity';
 import { WorkoutSession } from '../workout-sessions/entities/workout-session.entity';
 import { Set } from '../workout-sessions/entities/set.entity';
+import { NotFoundException } from '@nestjs/common';
 
 describe('WorkoutPlans Integration', () => {
   let app: INestApplication;
+  let createdUserId: string;
+  let createdExerciseId: string;
+  let createdWorkoutPlanId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -53,8 +57,7 @@ describe('WorkoutPlans Integration', () => {
     await app.close();
   });
 
-  it('should create a workout plan', async () => {
-    // First, create a user
+  it('should create a user', async () => {
     const userResponse = await request(app.getHttpServer())
       .post('/users')
       .send({
@@ -65,9 +68,10 @@ describe('WorkoutPlans Integration', () => {
       .expect(201);
 
     console.log('User created:', userResponse.body);
-    const userId = userResponse.body.id;
+    createdUserId = userResponse.body.id;
+  });
 
-    // Then, create an exercise
+  it('should create an exercise', async () => {
     const exerciseResponse = await request(app.getHttpServer())
       .post('/exercises')
       .send({
@@ -78,15 +82,17 @@ describe('WorkoutPlans Integration', () => {
       .expect(201);
 
     console.log('Exercise created:', exerciseResponse.body);
-    const exerciseId = exerciseResponse.body.id;
+    createdExerciseId = exerciseResponse.body.id;
+  });
 
+  it('should create a workout plan', async () => {
     const workoutPlan = {
       name: 'Test Workout Plan',
       description: 'This is a test workout plan',
-      userId: userId,
+      userId: createdUserId,
       exercises: [
         {
-          exerciseId: exerciseId,
+          exerciseId: createdExerciseId,
           sets: 3,
           reps: 10,
           restTime: 60,
@@ -100,6 +106,7 @@ describe('WorkoutPlans Integration', () => {
       .expect(201);
 
     console.log('Workout Plan created:', response.body);
+    createdWorkoutPlanId = response.body.id;
 
     expect(response.body).toHaveProperty('id');
     expect(response.body.name).toBe(workoutPlan.name);
@@ -111,5 +118,29 @@ describe('WorkoutPlans Integration', () => {
     );
   }, 30000);
 
-  // ... other tests
+  it('should return an array of workout plans', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/workout-plans')
+      .expect(200);
+
+    expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body.length).toBeGreaterThan(0);
+  });
+
+  it('should return a workout plan by id', async () => {
+    const response = await request(app.getHttpServer())
+      .get(`/workout-plans/${createdWorkoutPlanId}`)
+      .expect(200);
+
+    expect(response.body).toHaveProperty('id');
+    expect(response.body.id).toBe(createdWorkoutPlanId);
+  });
+
+  it('should throw NotFoundException if workout plan is not found', async () => {
+    await request(app.getHttpServer())
+      .get('/workout-plans/non-existent-id')
+      .expect(404);
+  });
+
+  // Add more tests for update and remove methods
 });
