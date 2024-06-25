@@ -27,7 +27,7 @@ export class WorkoutPlansController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.workoutPlansService.findOne(+id);
+    return this.workoutPlansService.findOne(id.toString());
   }
 
   @Patch(':id')
@@ -35,11 +35,11 @@ export class WorkoutPlansController {
     @Param('id') id: string,
     @Body() updateWorkoutPlanDto: UpdateWorkoutPlanDto
   ) {
-    return this.workoutPlansService.update(+id, updateWorkoutPlanDto);
+    return this.workoutPlansService.update(id.toString(), updateWorkoutPlanDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.workoutPlansService.remove(+id);
+    return this.workoutPlansService.remove(id.toString());
   }
 }

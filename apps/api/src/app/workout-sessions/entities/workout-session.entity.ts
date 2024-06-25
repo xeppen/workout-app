@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { WorkoutPlan } from '../../workout-plans/entities/workout-plan.entity';
-import { ExercisePerformed } from './exercise-performed.entity'; // Define ExercisePerformed entity if needed
+import { ExercisePerformed } from './exercise-performed.entity';
 
 @Entity()
 export class WorkoutSession {
@@ -28,7 +28,7 @@ export class WorkoutSession {
     (exercisePerformed) => exercisePerformed.workoutSession,
     { cascade: true }
   )
-  exercises: ExercisePerformed[];
+  exercisesPerformed: ExercisePerformed[];
 
   @Column({ nullable: true })
   notes: string;
