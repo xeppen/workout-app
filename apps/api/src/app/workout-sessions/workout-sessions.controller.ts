@@ -29,7 +29,7 @@ export class WorkoutSessionsController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.workoutSessionsService.findOne(+id);
+    return this.workoutSessionsService.findOne(id);
   }
 
   @Patch(':id')
@@ -37,11 +37,11 @@ export class WorkoutSessionsController {
     @Param('id') id: string,
     @Body() updateWorkoutSessionDto: UpdateWorkoutSessionDto
   ) {
-    return this.workoutSessionsService.update(+id, updateWorkoutSessionDto);
+    return this.workoutSessionsService.update(id, updateWorkoutSessionDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.workoutSessionsService.remove(+id);
+    return this.workoutSessionsService.remove(id);
   }
 }
