@@ -19,6 +19,7 @@ describe('WorkoutSessionsService', () => {
       save: jest.fn(),
       find: jest.fn(),
       findOneOrFail: jest.fn(),
+      findOne: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     };
@@ -57,30 +58,96 @@ describe('WorkoutSessionsService', () => {
   });
 
   describe('create', () => {
-    it('should create a new workout session', async () => {
+    it('should create a new workout session with exercises performed', async () => {
       const createDto: CreateWorkoutSessionDto = {
         userId: 'user-id',
         workoutPlanId: 'plan-id',
         notes: 'Test session',
+        exercisesPerformed: [
+          {
+            exerciseId: 'exercise-id',
+            sets: [
+              { reps: 10, weight: 100 },
+              { reps: 8, weight: 110 },
+            ],
+          },
+        ],
       };
-      const expectedResult: Partial<WorkoutSession> = {
+
+      const mockWorkoutSession = {
         id: 'session-id',
         ...createDto,
-        date: expect.any(Date),
-        exercisesPerformed: [],
+        date: new Date(),
       };
 
-      mockWorkoutSessionRepository.create.mockReturnValue(expectedResult);
-      mockWorkoutSessionRepository.save.mockResolvedValue(expectedResult);
+      const mockExercisePerformed = {
+        id: 'exercise-performed-id',
+        exerciseId: 'exercise-id',
+        workoutSession: mockWorkoutSession,
+      };
+
+      const mockSets = [
+        {
+          id: 'set-1',
+          ...createDto.exercisesPerformed[0].sets[0],
+          exercisePerformed: mockExercisePerformed,
+        },
+        {
+          id: 'set-2',
+          ...createDto.exercisesPerformed[0].sets[1],
+          exercisePerformed: mockExercisePerformed,
+        },
+      ];
+
+      mockWorkoutSessionRepository.create.mockReturnValue(mockWorkoutSession);
+      mockWorkoutSessionRepository.save.mockResolvedValue(mockWorkoutSession);
+      mockExercisePerformedRepository.create.mockReturnValue(
+        mockExercisePerformed
+      );
+      mockExercisePerformedRepository.save.mockResolvedValue(
+        mockExercisePerformed
+      );
+      mockSetRepository.create
+        .mockReturnValue(mockSets[0])
+        .mockReturnValueOnce(mockSets[1]);
+      mockSetRepository.save
+        .mockResolvedValue(mockSets[0])
+        .mockResolvedValueOnce(mockSets[1]);
+
+      mockWorkoutSessionRepository.findOne.mockResolvedValue({
+        ...mockWorkoutSession,
+        exercisesPerformed: [{ ...mockExercisePerformed, sets: mockSets }],
+      });
 
       const result = await service.create(createDto);
-      expect(result).toEqual(expectedResult);
+
+      expect(result).toEqual({
+        ...mockWorkoutSession,
+        exercisesPerformed: [{ ...mockExercisePerformed, sets: mockSets }],
+      });
       expect(mockWorkoutSessionRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining(createDto)
+        expect.objectContaining({
+          userId: createDto.userId,
+          workoutPlanId: createDto.workoutPlanId,
+          notes: createDto.notes,
+        })
       );
       expect(mockWorkoutSessionRepository.save).toHaveBeenCalledWith(
-        expectedResult
+        mockWorkoutSession
       );
+      expect(mockExercisePerformedRepository.create).toHaveBeenCalledWith({
+        exerciseId: createDto.exercisesPerformed[0].exerciseId,
+        workoutSession: mockWorkoutSession,
+      });
+      expect(mockExercisePerformedRepository.save).toHaveBeenCalledWith(
+        mockExercisePerformed
+      );
+      expect(mockSetRepository.create).toHaveBeenCalledTimes(2);
+      expect(mockSetRepository.save).toHaveBeenCalledTimes(2);
+      expect(mockWorkoutSessionRepository.findOne).toHaveBeenCalledWith({
+        where: { id: mockWorkoutSession.id },
+        relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
+      });
     });
   });
 

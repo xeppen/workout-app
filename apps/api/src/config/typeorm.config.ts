@@ -6,22 +6,38 @@ import { WorkoutSession } from '../app/workout-sessions/entities/workout-session
 import { ProgressRecord } from '../app/progress-records/entities/progress-record.entity';
 import { ExercisePerformed } from '../app/workout-sessions/entities/exercise-performed.entity';
 import { ExerciseInPlan } from '../app/workout-plans/entities/exercise-in-plan.entity';
+import { Set } from '../app/workout-sessions/entities/set.entity';
 
-export const typeOrmConfig: TypeOrmModuleOptions = {
-  type: 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT, 10) || 5432,
-  username: process.env.DB_USERNAME || 'your_username',
-  password: process.env.DB_PASSWORD || 'your_password',
-  database: process.env.DB_NAME || 'workout_app',
-  entities: [
-    User,
-    WorkoutPlan,
-    Exercise,
-    WorkoutSession,
-    ProgressRecord,
-    ExercisePerformed,
-    ExerciseInPlan,
-  ],
-  synchronize: process.env.NODE_ENV !== 'production', // Be cautious with this in production
+const entities = [
+  User,
+  WorkoutPlan,
+  Exercise,
+  WorkoutSession,
+  ProgressRecord,
+  ExercisePerformed,
+  ExerciseInPlan,
+  Set,
+];
+
+export const getTypeOrmConfig = (): TypeOrmModuleOptions => {
+  if (process.env.NODE_ENV === 'test') {
+    return {
+      type: 'sqlite',
+      database: ':memory:',
+      entities: entities,
+      synchronize: true,
+      logging: false,
+    };
+  }
+
+  return {
+    type: 'postgres',
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT, 10) || 5432,
+    username: process.env.DB_USERNAME || 'your_username',
+    password: process.env.DB_PASSWORD || 'your_password',
+    database: process.env.DB_NAME || 'workout_app',
+    entities: entities,
+    synchronize: process.env.NODE_ENV !== 'production',
+  };
 };
