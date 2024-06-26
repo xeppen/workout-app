@@ -10,6 +10,7 @@ import {
 import { ProgressRecordsService } from './progress-records.service';
 import { CreateProgressRecordDto } from './dto/create-progress-record.dto';
 import { UpdateProgressRecordDto } from './dto/update-progress-record.dto';
+import { ProgressRecord } from './entities/progress-record.entity';
 
 @Controller('progress-records')
 export class ProgressRecordsController {
@@ -18,30 +19,32 @@ export class ProgressRecordsController {
   ) {}
 
   @Post()
-  create(@Body() createProgressRecordDto: CreateProgressRecordDto) {
+  create(
+    @Body() createProgressRecordDto: CreateProgressRecordDto
+  ): Promise<ProgressRecord> {
     return this.progressRecordsService.create(createProgressRecordDto);
   }
 
   @Get()
-  findAll() {
+  findAll(): Promise<ProgressRecord[]> {
     return this.progressRecordsService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.progressRecordsService.findOne(+id);
+  findOne(@Param('id') id: string): Promise<ProgressRecord> {
+    return this.progressRecordsService.findOne(id);
   }
 
   @Patch(':id')
   update(
     @Param('id') id: string,
     @Body() updateProgressRecordDto: UpdateProgressRecordDto
-  ) {
-    return this.progressRecordsService.update(+id, updateProgressRecordDto);
+  ): Promise<ProgressRecord> {
+    return this.progressRecordsService.update(id, updateProgressRecordDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.progressRecordsService.remove(+id);
+  remove(@Param('id') id: string): Promise<void> {
+    return this.progressRecordsService.remove(id);
   }
 }
