@@ -18,7 +18,7 @@ export class WorkoutSessionsController {
   ) {}
 
   @Post()
-  create(@Body() createWorkoutSessionDto: CreateWorkoutSessionDto) {
+  async create(@Body() createWorkoutSessionDto: CreateWorkoutSessionDto) {
     return this.workoutSessionsService.create(createWorkoutSessionDto);
   }
 

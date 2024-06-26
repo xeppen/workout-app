@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "files": [],
-  "include": [],
+  "include": ["src/**/*.e2e-spec.ts", "src/**/*.d.ts"],
   "references": [
     {
       "path": "./tsconfig.app.json"
@@ -14,6 +14,10 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "outDir": "../out-tsc/e2e",
+    "module": "commonjs",
+    "target": "es2017",
+    "types": ["jest", "node"]
   }
 }
