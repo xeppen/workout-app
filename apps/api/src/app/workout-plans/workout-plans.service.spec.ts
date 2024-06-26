@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { WorkoutPlansService } from './workout-plans.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { WorkoutPlansService } from './workout-plans.service';
 import { WorkoutPlan } from './entities/workout-plan.entity';
 import { ExerciseInPlan } from './entities/exercise-in-plan.entity';
 import { CreateWorkoutPlanDto } from './dto/create-workout-plan.dto';
@@ -11,8 +11,8 @@ import { Exercise } from '../exercises/entities/exercise.entity';
 
 describe('WorkoutPlansService', () => {
   let service: WorkoutPlansService;
-  let workoutPlanRepository: Repository<WorkoutPlan>;
-  let exerciseInPlanRepository: Repository<ExerciseInPlan>;
+  let workoutPlanRepository: jest.Mocked<Repository<WorkoutPlan>>;
+  let exerciseInPlanRepository: jest.Mocked<Repository<ExerciseInPlan>>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -40,12 +40,8 @@ describe('WorkoutPlansService', () => {
     }).compile();
 
     service = module.get<WorkoutPlansService>(WorkoutPlansService);
-    workoutPlanRepository = module.get<Repository<WorkoutPlan>>(
-      getRepositoryToken(WorkoutPlan)
-    );
-    exerciseInPlanRepository = module.get<Repository<ExerciseInPlan>>(
-      getRepositoryToken(ExerciseInPlan)
-    );
+    workoutPlanRepository = module.get(getRepositoryToken(WorkoutPlan));
+    exerciseInPlanRepository = module.get(getRepositoryToken(ExerciseInPlan));
   });
 
   it('should be defined', () => {
@@ -78,14 +74,24 @@ describe('WorkoutPlansService', () => {
         ],
       };
 
-      jest
-        .spyOn(service, 'create')
-        .mockResolvedValue(expectedResult as WorkoutPlan);
+      workoutPlanRepository.create.mockReturnValue(
+        expectedResult as WorkoutPlan
+      );
+      workoutPlanRepository.save.mockResolvedValue(
+        expectedResult as WorkoutPlan
+      );
 
       const result = await service.create(createWorkoutPlanDto);
 
       expect(result).toEqual(expectedResult);
-      expect(service.create).toHaveBeenCalledWith(createWorkoutPlanDto);
+      expect(workoutPlanRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: createWorkoutPlanDto.name,
+          description: createWorkoutPlanDto.description,
+          userId: createWorkoutPlanDto.userId,
+        })
+      );
+      expect(workoutPlanRepository.save).toHaveBeenCalled();
     });
   });
 
@@ -95,32 +101,53 @@ describe('WorkoutPlansService', () => {
       const updateWorkoutPlanDto: UpdateWorkoutPlanDto = {
         name: 'Updated Plan',
       };
-      const updatedPlan = { id, ...updateWorkoutPlanDto };
+      const existingPlan = {
+        id,
+        name: 'Old Plan',
+        description: 'Old Description',
+        exercises: [],
+      };
+      const updatedPlan = { ...existingPlan, ...updateWorkoutPlanDto };
 
-      jest
-        .spyOn(workoutPlanRepository, 'update')
-        .mockResolvedValue({ affected: 1 } as any);
-      jest
-        .spyOn(service, 'findOne')
-        .mockResolvedValue(updatedPlan as WorkoutPlan);
+      workoutPlanRepository.findOne.mockResolvedValue(
+        existingPlan as WorkoutPlan
+      );
+      workoutPlanRepository.save.mockResolvedValue(updatedPlan as WorkoutPlan);
 
       const result = await service.update(id, updateWorkoutPlanDto);
 
       expect(result).toEqual(updatedPlan);
-      expect(workoutPlanRepository.update).toHaveBeenCalledWith(
-        id,
-        updateWorkoutPlanDto
+      expect(workoutPlanRepository.findOne).toHaveBeenCalledWith({
+        where: { id },
+        relations: ['exercises'],
+      });
+      expect(workoutPlanRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining(updatedPlan)
       );
-      expect(service.findOne).toHaveBeenCalledWith(id);
+    });
+
+    it('should throw NotFoundException if workout plan is not found', async () => {
+      const id = 'non-existent-id';
+      const updateWorkoutPlanDto: UpdateWorkoutPlanDto = {
+        name: 'Updated Plan',
+      };
+
+      workoutPlanRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.update(id, updateWorkoutPlanDto)).rejects.toThrow(
+        NotFoundException
+      );
+      expect(workoutPlanRepository.findOne).toHaveBeenCalledWith({
+        where: { id },
+        relations: ['exercises'],
+      });
     });
   });
 
   describe('remove', () => {
     it('should remove a workout plan', async () => {
       const id = 'plan-id';
-      jest
-        .spyOn(workoutPlanRepository, 'delete')
-        .mockResolvedValue({ affected: 1 } as any);
+      workoutPlanRepository.delete.mockResolvedValue({ affected: 1 } as any);
 
       await service.remove(id);
 

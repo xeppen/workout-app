@@ -49,6 +49,7 @@ describe('WorkoutSessionsController', () => {
         userId: 'user-id',
         workoutPlanId: 'workout-plan-id',
         notes: 'Session notes',
+        exercisesPerformed: [],
       };
       const createdWorkoutSession: WorkoutSession = {
         id: '1',
