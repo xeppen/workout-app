@@ -1,13 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkoutPlan } from './entities/workout-plan.entity';
-import { CreateWorkoutPlanDto } from './dto/create-workout-plan.dto';
 import { ExerciseInPlan } from './entities/exercise-in-plan.entity';
+import { CreateWorkoutPlanDto } from './dto/create-workout-plan.dto';
 import { UpdateWorkoutPlanDto } from './dto/update-workout-plan.dto';
 
 @Injectable()
 export class WorkoutPlansService {
+  private readonly logger = new Logger(WorkoutPlansService.name);
+
   constructor(
     @InjectRepository(WorkoutPlan)
     private workoutPlanRepository: Repository<WorkoutPlan>,
@@ -36,18 +38,26 @@ export class WorkoutPlansService {
   }
 
   async findAll(): Promise<WorkoutPlan[]> {
-    return await this.workoutPlanRepository.find({
-      relations: ['user', 'exercises'],
-      select: ['id', 'name', 'description', 'userId'],
+    this.logger.debug('Finding all workout plans');
+    const workoutPlans = await this.workoutPlanRepository.find({
+      relations: ['exercises'],
     });
+    this.logger.debug(`Found ${workoutPlans.length} workout plans`);
+    return workoutPlans;
   }
 
   async findOne(id: string): Promise<WorkoutPlan> {
-    return await this.workoutPlanRepository.findOne({
+    this.logger.debug(`Finding workout plan with id: ${id}`);
+    const workoutPlan = await this.workoutPlanRepository.findOne({
       where: { id },
-      relations: ['user', 'exercises'],
-      select: ['id', 'name', 'description', 'userId'],
+      relations: ['exercises'],
     });
+    if (!workoutPlan) {
+      this.logger.warn(`Workout plan with id ${id} not found`);
+      throw new NotFoundException(`Workout plan with ID "${id}" not found`);
+    }
+    this.logger.debug(`Found workout plan: ${JSON.stringify(workoutPlan)}`);
+    return workoutPlan;
   }
 
   async update(

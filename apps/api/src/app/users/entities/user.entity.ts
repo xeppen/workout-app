@@ -8,14 +8,14 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column()
+  name: string;
+
   @Column({ unique: true })
   email: string;
 
   @Column()
   password: string;
-
-  @Column()
-  name: string;
 
   @OneToMany(() => WorkoutPlan, (workoutPlan) => workoutPlan.user)
   workoutPlans: WorkoutPlan[];

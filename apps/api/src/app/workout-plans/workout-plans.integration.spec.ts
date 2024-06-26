@@ -86,13 +86,37 @@ describe('WorkoutPlans Integration', () => {
   });
 
   it('should create a workout plan', async () => {
+    // Create a user with a unique email
+    const uniqueEmail = `test${Date.now()}@example.com`;
+    const userResponse = await request(app.getHttpServer())
+      .post('/users')
+      .send({ name: 'Test User', email: uniqueEmail, password: 'password123' })
+      .expect(201);
+
+    console.log('User created:', userResponse.body);
+    const userId = userResponse.body.id;
+
+    // Create an exercise
+    const exerciseResponse = await request(app.getHttpServer())
+      .post('/exercises')
+      .send({
+        name: 'Test Exercise',
+        description: 'Test description',
+        targetMuscleGroups: ['chest'],
+      })
+      .expect(201);
+
+    console.log('Exercise created:', exerciseResponse.body);
+    const exerciseId = exerciseResponse.body.id;
+
+    // Create a workout plan
     const workoutPlan = {
       name: 'Test Workout Plan',
       description: 'This is a test workout plan',
-      userId: createdUserId,
+      userId: userId,
       exercises: [
         {
-          exerciseId: createdExerciseId,
+          exerciseId: exerciseId,
           sets: 3,
           reps: 10,
           restTime: 60,
@@ -116,7 +140,7 @@ describe('WorkoutPlans Integration', () => {
     expect(response.body.exercises[0].exerciseId).toBe(
       workoutPlan.exercises[0].exerciseId
     );
-  }, 30000);
+  });
 
   it('should return an array of workout plans', async () => {
     const response = await request(app.getHttpServer())

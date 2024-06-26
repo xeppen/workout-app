@@ -8,4 +8,6 @@ export default {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../coverage/api',
+  collectCoverage: true,
+  coverageReporters: ['html', 'text', 'lcov'],
 };

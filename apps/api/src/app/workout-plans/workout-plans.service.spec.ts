@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { WorkoutPlansService } from './workout-plans.service';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { WorkoutPlan } from './entities/workout-plan.entity';
 import { ExerciseInPlan } from './entities/exercise-in-plan.entity';
+import { CreateWorkoutPlanDto } from './dto/create-workout-plan.dto';
+import { Exercise } from '../exercises/entities/exercise.entity';
 
 describe('WorkoutPlansService', () => {
   let service: WorkoutPlansService;
@@ -13,15 +15,11 @@ describe('WorkoutPlansService', () => {
         WorkoutPlansService,
         {
           provide: getRepositoryToken(WorkoutPlan),
-          useValue: {
-            // Mock repository methods here
-          },
+          useValue: {},
         },
         {
           provide: getRepositoryToken(ExerciseInPlan),
-          useValue: {
-            // Mock repository methods here
-          },
+          useValue: {},
         },
       ],
     }).compile();
@@ -33,5 +31,40 @@ describe('WorkoutPlansService', () => {
     expect(service).toBeDefined();
   });
 
-  // Add more tests here
+  describe('create', () => {
+    it('should create a workout plan', async () => {
+      const createWorkoutPlanDto: CreateWorkoutPlanDto = {
+        name: 'Test Plan',
+        description: 'Test Description',
+        exercises: [
+          { exerciseId: 'exercise-id', sets: 3, reps: 10, restTime: 60 },
+        ],
+        userId: 'user-id',
+      };
+
+      const expectedResult: Partial<WorkoutPlan> = {
+        id: 'plan-id',
+        name: createWorkoutPlanDto.name,
+        description: createWorkoutPlanDto.description,
+        userId: createWorkoutPlanDto.userId,
+        exercises: [
+          {
+            id: 'exercise-in-plan-id',
+            ...createWorkoutPlanDto.exercises[0],
+            exercise: new Exercise(),
+            workoutPlan: new WorkoutPlan(),
+          },
+        ],
+      };
+
+      jest
+        .spyOn(service, 'create')
+        .mockResolvedValue(expectedResult as WorkoutPlan);
+
+      const result = await service.create(createWorkoutPlanDto);
+
+      expect(result).toEqual(expectedResult);
+      expect(service.create).toHaveBeenCalledWith(createWorkoutPlanDto);
+    });
+  });
 });

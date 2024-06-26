@@ -27,6 +27,7 @@ describe('ExerciseInPlan Entity', () => {
     expect(columnNames).toContain('sets');
     expect(columnNames).toContain('reps');
     expect(columnNames).toContain('restTime');
+    expect(columnNames).toContain('exerciseId');
 
     // Check if relationships exist
     expect(relationNames).toContain('workoutPlan');

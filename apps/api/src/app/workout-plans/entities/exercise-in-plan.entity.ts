@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { WorkoutPlan } from '../../workout-plans/entities/workout-plan.entity';
+import { WorkoutPlan } from './workout-plan.entity';
 import { Exercise } from '../../exercises/entities/exercise.entity';
 
 @Entity()
@@ -7,11 +7,14 @@ export class ExerciseInPlan {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column()
+  exerciseId: string;
+
+  @ManyToOne(() => Exercise)
+  exercise: Exercise;
+
   @ManyToOne(() => WorkoutPlan, (workoutPlan) => workoutPlan.exercises)
   workoutPlan: WorkoutPlan;
-
-  @ManyToOne(() => Exercise, (exercise) => exercise.exercisesInPlan)
-  exercise: Exercise;
 
   @Column()
   sets: number;
@@ -20,5 +23,5 @@ export class ExerciseInPlan {
   reps: number;
 
   @Column()
-  restTime: number; // in seconds
+  restTime: number;
 }

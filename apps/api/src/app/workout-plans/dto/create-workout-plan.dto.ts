@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsArray,
+  ValidateNested,
+  IsUUID,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ExerciseInPlanDto } from './execise-in-plan.dto';
 
@@ -11,7 +17,7 @@ export class CreateWorkoutPlanDto {
   @IsNotEmpty()
   description: string;
 
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   userId: string;
 
