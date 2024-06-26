@@ -1,6 +1,7 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateWorkoutSessionDto } from './create-workout-session.dto';
 
-export class UpdateWorkoutSessionDto extends PartialType(
-  CreateWorkoutSessionDto
-) {}
+// update-workout-session.dto.ts
+export class UpdateWorkoutSessionDto {
+  notes?: string;
+}

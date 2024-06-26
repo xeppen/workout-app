@@ -15,7 +15,6 @@ import { User } from '../users/entities/user.entity';
 import { ProgressRecord } from '../progress-records/entities/progress-record.entity';
 import { WorkoutSession } from '../workout-sessions/entities/workout-session.entity';
 import { Set } from '../workout-sessions/entities/set.entity';
-import { NotFoundException } from '@nestjs/common';
 
 describe('WorkoutPlans Integration', () => {
   let app: INestApplication;

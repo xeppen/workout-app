@@ -1,3 +1,4 @@
+// apps/api/src/app/workout-sessions/entities/workout-session.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
