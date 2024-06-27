@@ -21,11 +21,9 @@ describe('WorkoutPlansService', () => {
         {
           provide: getRepositoryToken(WorkoutPlan),
           useValue: {
-            create: jest.fn(),
-            save: jest.fn(),
-            find: jest.fn(),
             findOne: jest.fn(),
-            update: jest.fn(),
+            save: jest.fn(),
+            create: jest.fn(),
             delete: jest.fn(),
           },
         },
@@ -34,6 +32,7 @@ describe('WorkoutPlansService', () => {
           useValue: {
             create: jest.fn(),
             save: jest.fn(),
+            delete: jest.fn(),
           },
         },
       ],
@@ -111,7 +110,7 @@ describe('WorkoutPlansService', () => {
   });
 
   describe('update', () => {
-    it('should update a workout plan', async () => {
+    it('should update a workout plan without exercises', async () => {
       const id = 'plan-id';
       const updateWorkoutPlanDto: UpdateWorkoutPlanDto = {
         name: 'Updated Plan',
@@ -138,6 +137,90 @@ describe('WorkoutPlansService', () => {
       });
       expect(workoutPlanRepository.save).toHaveBeenCalledWith(
         expect.objectContaining(updatedPlan)
+      );
+    });
+
+    it('should update a workout plan with exercises', async () => {
+      const id = 'plan-id';
+      const updateWorkoutPlanDto: UpdateWorkoutPlanDto = {
+        name: 'Updated Plan',
+        exercises: [
+          { exerciseId: 'exercise-1', sets: 3, reps: 10, restTime: 60 },
+          { exerciseId: 'exercise-2', sets: 4, reps: 8, restTime: 90 },
+        ],
+      };
+      const existingPlan: Partial<WorkoutPlan> = {
+        id,
+        name: 'Old Plan',
+        description: 'Old Description',
+        exercises: [],
+        userId: 'user-id',
+      };
+
+      const updatedExercises: Partial<ExerciseInPlan>[] =
+        updateWorkoutPlanDto.exercises.map((exercise, index) => ({
+          id: `exercise-in-plan-${index}`,
+          exerciseId: exercise.exerciseId,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          restTime: exercise.restTime,
+          exercise: { id: exercise.exerciseId } as Exercise,
+        }));
+
+      const updatedPlan: Partial<WorkoutPlan> = {
+        ...existingPlan,
+        name: updateWorkoutPlanDto.name,
+        exercises: updatedExercises as ExerciseInPlan[],
+      };
+
+      workoutPlanRepository.findOne.mockResolvedValue(
+        existingPlan as WorkoutPlan
+      );
+      workoutPlanRepository.save.mockResolvedValue(updatedPlan as WorkoutPlan);
+
+      exerciseInPlanRepository.create.mockImplementation(
+        (dto: Partial<ExerciseInPlan>) =>
+          ({
+            id: `exercise-in-plan-${Math.random()}`,
+            ...dto,
+          } as ExerciseInPlan)
+      );
+
+      exerciseInPlanRepository.save.mockResolvedValue(
+        updatedExercises as ExerciseInPlan[]
+      );
+
+      const result = await service.update(id, updateWorkoutPlanDto);
+
+      // Remove circular references before comparing
+      const expectedResult = {
+        ...updatedPlan,
+        exercises: updatedPlan.exercises?.map((exercise) => ({
+          ...exercise,
+          workoutPlan: undefined, // Remove the circular reference
+        })),
+      };
+
+      expect(result).toEqual(expectedResult);
+      expect(workoutPlanRepository.findOne).toHaveBeenCalledWith({
+        where: { id },
+        relations: ['exercises'],
+      });
+      expect(exerciseInPlanRepository.delete).toHaveBeenCalledWith({
+        workoutPlan: { id },
+      });
+      expect(exerciseInPlanRepository.create).toHaveBeenCalledTimes(2);
+      expect(exerciseInPlanRepository.save).toHaveBeenCalledWith(
+        expect.arrayContaining(updatedExercises.map(expect.objectContaining))
+      );
+      expect(workoutPlanRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id,
+          name: updateWorkoutPlanDto.name,
+          exercises: expect.arrayContaining(
+            updatedExercises.map(expect.objectContaining)
+          ),
+        })
       );
     });
 

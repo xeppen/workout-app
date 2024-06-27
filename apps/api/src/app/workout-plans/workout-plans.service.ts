@@ -19,7 +19,7 @@ export class WorkoutPlansService {
 
   async create(
     createWorkoutPlanDto: CreateWorkoutPlanDto
-  ): Promise<WorkoutPlan> {
+  ): Promise<Partial<WorkoutPlan>> {
     const { exercises, ...workoutPlanData } = createWorkoutPlanDto;
 
     const workoutPlan = this.workoutPlanRepository.create(workoutPlanData);
@@ -46,7 +46,7 @@ export class WorkoutPlansService {
     return workoutPlans;
   }
 
-  async findOne(id: string): Promise<WorkoutPlan> {
+  async findOne(id: string): Promise<Partial<WorkoutPlan>> {
     this.logger.debug(`Finding workout plan with id: ${id}`);
     const workoutPlan = await this.workoutPlanRepository.findOne({
       where: { id },
@@ -57,13 +57,13 @@ export class WorkoutPlansService {
       throw new NotFoundException(`Workout plan with ID "${id}" not found`);
     }
     this.logger.debug(`Found workout plan: ${JSON.stringify(workoutPlan)}`);
-    return workoutPlan;
+    return this.sanitizeWorkoutPlan(workoutPlan);
   }
 
   async update(
     id: string,
     updateWorkoutPlanDto: UpdateWorkoutPlanDto
-  ): Promise<WorkoutPlan> {
+  ): Promise<Partial<WorkoutPlan>> {
     this.logger.debug(`Updating workout plan with id: ${id}`);
 
     try {
@@ -107,14 +107,12 @@ export class WorkoutPlansService {
       const savedWorkoutPlan = await this.workoutPlanRepository.save(
         workoutPlan
       );
+
       this.logger.debug(
         `Updated workout plan: ${JSON.stringify(savedWorkoutPlan)}`
       );
 
-      return this.workoutPlanRepository.findOne({
-        where: { id: savedWorkoutPlan.id },
-        relations: ['exercises'],
-      });
+      return this.sanitizeWorkoutPlan(savedWorkoutPlan);
     } catch (error) {
       this.logger.error(`Error updating workout plan: ${error.message}`);
       throw error;
@@ -123,5 +121,15 @@ export class WorkoutPlansService {
 
   async remove(id: string): Promise<void> {
     await this.workoutPlanRepository.delete(id);
+  }
+
+  private sanitizeWorkoutPlan(workoutPlan: WorkoutPlan): Partial<WorkoutPlan> {
+    return {
+      ...workoutPlan,
+      exercises: workoutPlan.exercises?.map((exercise) => ({
+        ...exercise,
+        workoutPlan: undefined, // Remove the circular reference
+      })),
+    };
   }
 }
