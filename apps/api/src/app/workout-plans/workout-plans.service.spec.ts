@@ -59,31 +59,43 @@ describe('WorkoutPlansService', () => {
         userId: 'user-id',
       };
 
-      const expectedResult: Partial<WorkoutPlan> = {
+      const savedWorkoutPlan: Partial<WorkoutPlan> = {
         id: 'plan-id',
         name: createWorkoutPlanDto.name,
         description: createWorkoutPlanDto.description,
         userId: createWorkoutPlanDto.userId,
-        exercises: [
-          {
-            id: 'exercise-in-plan-id',
-            ...createWorkoutPlanDto.exercises[0],
-            exercise: new Exercise(),
-            workoutPlan: new WorkoutPlan(),
-          },
-        ],
       };
 
+      const exercisesInPlan = [
+        {
+          id: 'exercise-in-plan-id',
+          ...createWorkoutPlanDto.exercises[0],
+          workoutPlan: savedWorkoutPlan as WorkoutPlan,
+        },
+      ];
+
       workoutPlanRepository.create.mockReturnValue(
-        expectedResult as WorkoutPlan
+        savedWorkoutPlan as WorkoutPlan
       );
       workoutPlanRepository.save.mockResolvedValue(
-        expectedResult as WorkoutPlan
+        savedWorkoutPlan as WorkoutPlan
       );
+      workoutPlanRepository.findOne.mockResolvedValue({
+        ...savedWorkoutPlan,
+        exercises: exercisesInPlan,
+      } as WorkoutPlan);
+
+      exerciseInPlanRepository.create.mockReturnValue(
+        exercisesInPlan[0] as ExerciseInPlan
+      );
+      exerciseInPlanRepository.save.mockResolvedValue(exercisesInPlan as any); // Change to any to match type
 
       const result = await service.create(createWorkoutPlanDto);
 
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual({
+        ...savedWorkoutPlan,
+        exercises: exercisesInPlan,
+      });
       expect(workoutPlanRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           name: createWorkoutPlanDto.name,
@@ -92,6 +104,9 @@ describe('WorkoutPlansService', () => {
         })
       );
       expect(workoutPlanRepository.save).toHaveBeenCalled();
+      expect(exerciseInPlanRepository.save).toHaveBeenCalledWith(
+        exercisesInPlan
+      );
     });
   });
 
