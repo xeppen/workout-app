@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app/app.module';
 
@@ -8,9 +8,10 @@ describe('WorkoutApp (e2e)', () => {
   let userId: string;
   let exerciseId: string;
   let workoutPlanId: string;
+  let logger: Logger;
 
   beforeAll(async () => {
-    process.env.NODE_ENV = 'test';
+    (process.env as any).NODE_ENV = 'test';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -18,6 +19,7 @@ describe('WorkoutApp (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+    logger = new Logger('E2E Test');
   }, 30000);
 
   afterAll(async () => {
@@ -49,7 +51,7 @@ describe('WorkoutApp (e2e)', () => {
   });
 
   it('2. Creating and Managing a Workout Plan', async () => {
-    // Create an exercise first
+    // First, create an exercise
     const exerciseResponse = await request(app.getHttpServer())
       .post('/exercises')
       .send({
@@ -61,7 +63,8 @@ describe('WorkoutApp (e2e)', () => {
 
     exerciseId = exerciseResponse.body.id;
 
-    const response = await request(app.getHttpServer())
+    // Now create a workout plan
+    const createResponse = await request(app.getHttpServer())
       .post('/workout-plans')
       .send({
         name: 'Strength Training',
@@ -78,9 +81,16 @@ describe('WorkoutApp (e2e)', () => {
       })
       .expect(201);
 
-    workoutPlanId = response.body.id;
-    expect(response.body.name).toBe('Strength Training');
-    expect(response.body.exercises).toHaveLength(1);
+    workoutPlanId = createResponse.body.id;
+
+    // Verify the workout plan was created correctly
+    const getResponse = await request(app.getHttpServer())
+      .get(`/workout-plans/${workoutPlanId}`)
+      .expect(200);
+
+    expect(getResponse.body.name).toBe('Strength Training');
+    expect(getResponse.body.exercises).toHaveLength(1);
+    expect(getResponse.body.exercises[0].exerciseId).toBe(exerciseId);
   });
 
   it('3. Recording a Workout Session', async () => {
@@ -132,24 +142,51 @@ describe('WorkoutApp (e2e)', () => {
   });
 
   it('5. Modifying an Existing Workout Plan', async () => {
-    const response = await request(app.getHttpServer())
-      .patch(`/workout-plans/${workoutPlanId}`)
-      .send({
-        name: 'Updated Strength Training',
-        exercises: [
-          {
-            exerciseId: exerciseId,
-            sets: 4,
-            reps: 8,
-            restTime: 90,
-          },
-        ],
-      })
+    logger.log(`Starting test: Modifying an Existing Workout Plan`);
+    logger.log(`Workout Plan ID: ${workoutPlanId}`);
+
+    // First, ensure the workout plan exists
+    logger.log(`Fetching workout plan with ID: ${workoutPlanId}`);
+    const getResponse = await request(app.getHttpServer())
+      .get(`/workout-plans/${workoutPlanId}`)
       .expect(200);
 
-    expect(response.body.name).toBe('Updated Strength Training');
-    expect(response.body.exercises).toHaveLength(1);
-    expect(response.body.exercises[0].sets).toBe(4);
-    expect(response.body.exercises[0].reps).toBe(8);
+    logger.log(`Fetch response: ${JSON.stringify(getResponse.body)}`);
+    expect(getResponse.body).toBeDefined();
+    expect(getResponse.body.id).toBe(workoutPlanId);
+
+    // Now update the workout plan
+    logger.log(`Updating workout plan with ID: ${workoutPlanId}`);
+    const updateData = {
+      name: 'Updated Strength Training',
+      exercises: [
+        {
+          exerciseId: exerciseId,
+          sets: 4,
+          reps: 8,
+          restTime: 90,
+        },
+      ],
+    };
+    logger.log(`Update data: ${JSON.stringify(updateData)}`);
+
+    try {
+      const updateResponse = await request(app.getHttpServer())
+        .patch(`/workout-plans/${workoutPlanId}`)
+        .send(updateData);
+
+      logger.log(`Update status: ${updateResponse.status}`);
+      logger.log(`Update response: ${JSON.stringify(updateResponse.body)}`);
+
+      expect(updateResponse.status).toBe(200);
+      expect(updateResponse.body.name).toBe('Updated Strength Training');
+      expect(updateResponse.body.exercises).toHaveLength(1);
+      expect(updateResponse.body.exercises[0].sets).toBe(4);
+      expect(updateResponse.body.exercises[0].reps).toBe(8);
+    } catch (error) {
+      logger.error(`Error during update: ${error.message}`);
+      logger.error(`Error response: ${JSON.stringify(error.response?.body)}`);
+      throw error;
+    }
   });
 });
