@@ -64,39 +64,61 @@ export class WorkoutPlansService {
     id: string,
     updateWorkoutPlanDto: UpdateWorkoutPlanDto
   ): Promise<WorkoutPlan> {
-    const workoutPlan = await this.workoutPlanRepository.findOne({
-      where: { id },
-      relations: ['exercises'],
-    });
+    this.logger.debug(`Updating workout plan with id: ${id}`);
 
-    if (!workoutPlan) {
-      throw new NotFoundException(`Workout plan with ID "${id}" not found`);
-    }
+    try {
+      const workoutPlan = await this.workoutPlanRepository.findOne({
+        where: { id },
+        relations: ['exercises'],
+      });
 
-    // Update the workout plan properties
-    Object.assign(workoutPlan, updateWorkoutPlanDto);
+      if (!workoutPlan) {
+        this.logger.warn(`Workout plan with id ${id} not found`);
+        throw new NotFoundException(`Workout plan with ID "${id}" not found`);
+      }
 
-    // Handle exercises update
-    if (updateWorkoutPlanDto.exercises) {
-      // Remove existing exercises
-      await this.exerciseInPlanRepository.remove(workoutPlan.exercises);
+      this.logger.debug(`Found workout plan: ${JSON.stringify(workoutPlan)}`);
 
-      // Create new ExerciseInPlan instances
-      workoutPlan.exercises = updateWorkoutPlanDto.exercises.map(
-        (exerciseDto) =>
+      // Update the workout plan properties
+      Object.assign(workoutPlan, updateWorkoutPlanDto);
+
+      // Handle exercises update
+      if (updateWorkoutPlanDto.exercises) {
+        this.logger.debug(`Updating exercises for workout plan ${id}`);
+
+        // Remove existing exercises
+        await this.exerciseInPlanRepository.delete({
+          workoutPlan: { id: workoutPlan.id },
+        });
+
+        // Create new ExerciseInPlan instances
+        const newExercises = updateWorkoutPlanDto.exercises.map((exerciseDto) =>
           this.exerciseInPlanRepository.create({
             ...exerciseDto,
             workoutPlan: workoutPlan,
           })
+        );
+
+        workoutPlan.exercises = await this.exerciseInPlanRepository.save(
+          newExercises
+        );
+      }
+
+      const savedWorkoutPlan = await this.workoutPlanRepository.save(
+        workoutPlan
       );
+      this.logger.debug(
+        `Updated workout plan: ${JSON.stringify(savedWorkoutPlan)}`
+      );
+
+      return this.workoutPlanRepository.findOne({
+        where: { id: savedWorkoutPlan.id },
+        relations: ['exercises'],
+      });
+    } catch (error) {
+      this.logger.error(`Error updating workout plan: ${error.message}`);
+      throw error;
     }
-
-    await this.workoutPlanRepository.save(workoutPlan);
-
-    return this.workoutPlanRepository.findOne({
-      where: { id },
-      relations: ['exercises'],
-    });
   }
 
   async remove(id: string): Promise<void> {
