@@ -6,7 +6,7 @@ import { ExerciseInPlan } from './entities/exercise-in-plan.entity';
 import { CreateWorkoutPlanDto } from './dto/create-workout-plan.dto';
 import { UpdateWorkoutPlanDto } from './dto/update-workout-plan.dto';
 import { NotFoundException } from '@nestjs/common';
-import { Repository, DeepPartial } from 'typeorm';
+import { Repository, DeepPartial, SaveOptions } from 'typeorm';
 import { Exercise } from '../exercises/entities/exercise.entity';
 
 describe('WorkoutPlansService', () => {
@@ -41,6 +41,18 @@ describe('WorkoutPlansService', () => {
     service = module.get<WorkoutPlansService>(WorkoutPlansService);
     workoutPlanRepository = module.get(getRepositoryToken(WorkoutPlan));
     exerciseInPlanRepository = module.get(getRepositoryToken(ExerciseInPlan));
+
+    // Add this mock implementation
+    exerciseInPlanRepository.save.mockImplementation(
+      (entity: DeepPartial<ExerciseInPlan>, options?: SaveOptions) => {
+        const result = {
+          ...entity,
+          id: 'mock-id',
+          exercise: { id: entity.exerciseId },
+        } as ExerciseInPlan;
+        return Promise.resolve(result);
+      }
+    );
   });
 
   it('should be defined', () => {
@@ -163,33 +175,38 @@ describe('WorkoutPlansService', () => {
       } as WorkoutPlan;
 
       const updatedExercises: DeepPartial<ExerciseInPlan>[] =
-        updateWorkoutPlanDto.exercises.map((exercise, index) => ({
+        updateWorkoutPlanDto.exercises.map((exercise) => ({
           exerciseId: exercise.exerciseId,
           sets: exercise.sets,
           reps: exercise.reps,
           restTime: exercise.restTime,
-          exercise: { id: exercise.exerciseId } as Exercise,
           workoutPlan: existingPlan,
         }));
+
+      const savedExercises = updatedExercises.map((exercise) => ({
+        ...exercise,
+        id: `mock-exercise-id-${Math.random()}`,
+      })) as ExerciseInPlan[];
 
       const updatedPlan: WorkoutPlan = {
         ...existingPlan,
         name: updateWorkoutPlanDto.name,
-        exercises: updatedExercises as ExerciseInPlan[],
+        exercises: savedExercises,
       };
 
       workoutPlanRepository.findOne.mockResolvedValue(existingPlan);
       workoutPlanRepository.save.mockResolvedValue(updatedPlan);
 
       exerciseInPlanRepository.create.mockImplementation(
-        (dto) => ({ ...dto, id: 'mock-id' } as ExerciseInPlan)
+        (dto) => dto as ExerciseInPlan
       );
+      exerciseInPlanRepository.save.mockResolvedValue(savedExercises);
 
       const result = await service.update(id, updateWorkoutPlanDto);
 
       const expectedResult = {
         ...updatedPlan,
-        exercises: updatedPlan.exercises.map((exercise) => ({
+        exercises: savedExercises.map((exercise) => ({
           ...exercise,
           workoutPlan: undefined,
         })),
@@ -212,7 +229,7 @@ describe('WorkoutPlansService', () => {
           id,
           name: updateWorkoutPlanDto.name,
           exercises: expect.arrayContaining(
-            updatedExercises.map(expect.objectContaining)
+            savedExercises.map(expect.objectContaining)
           ),
         })
       );

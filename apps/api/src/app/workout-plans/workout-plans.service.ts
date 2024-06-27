@@ -47,6 +47,7 @@ export class WorkoutPlansService {
   }
 
   async findOne(id: string): Promise<Partial<WorkoutPlan>> {
+    const workoutPlanId = String(id);
     this.logger.debug(`Finding workout plan with id: ${id}`);
     const workoutPlan = await this.workoutPlanRepository.findOne({
       where: { id },
@@ -63,73 +64,74 @@ export class WorkoutPlansService {
   async update(
     id: string,
     updateWorkoutPlanDto: UpdateWorkoutPlanDto
-  ): Promise<Partial<WorkoutPlan>> {
-    this.logger.debug(`Updating workout plan with id: ${id}`);
+  ): Promise<WorkoutPlan> {
+    const workoutPlan = await this.workoutPlanRepository.findOne({
+      where: { id },
+      relations: ['exercises'],
+    });
 
-    try {
-      const workoutPlan = await this.workoutPlanRepository.findOne({
-        where: { id },
-        relations: ['exercises'],
-      });
-
-      if (!workoutPlan) {
-        this.logger.warn(`Workout plan with id ${id} not found`);
-        throw new NotFoundException(`Workout plan with ID "${id}" not found`);
-      }
-
-      this.logger.debug(`Found workout plan: ${JSON.stringify(workoutPlan)}`);
-
-      // Update the workout plan properties
-      Object.assign(workoutPlan, updateWorkoutPlanDto);
-
-      // Handle exercises update
-      if (updateWorkoutPlanDto.exercises) {
-        this.logger.debug(`Updating exercises for workout plan ${id}`);
-
-        // Remove existing exercises
-        await this.exerciseInPlanRepository.delete({
-          workoutPlan: { id: workoutPlan.id },
-        });
-
-        // Create new ExerciseInPlan instances
-        const newExercises = updateWorkoutPlanDto.exercises.map((exerciseDto) =>
-          this.exerciseInPlanRepository.create({
-            ...exerciseDto,
-            workoutPlan: workoutPlan,
-          })
-        );
-
-        workoutPlan.exercises = await this.exerciseInPlanRepository.save(
-          newExercises
-        );
-      }
-
-      const savedWorkoutPlan = await this.workoutPlanRepository.save(
-        workoutPlan
-      );
-
-      this.logger.debug(
-        `Updated workout plan: ${JSON.stringify(savedWorkoutPlan)}`
-      );
-
-      return this.sanitizeWorkoutPlan(savedWorkoutPlan);
-    } catch (error) {
-      this.logger.error(`Error updating workout plan: ${error.message}`);
-      throw error;
+    if (!workoutPlan) {
+      throw new NotFoundException(`Workout plan with ID "${id}" not found`);
     }
+
+    // Update basic properties
+    Object.assign(workoutPlan, updateWorkoutPlanDto);
+
+    // Handle exercises update
+    if (updateWorkoutPlanDto.exercises) {
+      // Remove existing exercises
+      await this.exerciseInPlanRepository.delete({ workoutPlan: { id } });
+
+      // Create new exercises
+      const newExercises = updateWorkoutPlanDto.exercises.map((exercise) =>
+        this.exerciseInPlanRepository.create({
+          ...exercise,
+          workoutPlan,
+        })
+      );
+
+      // Save new exercises
+      workoutPlan.exercises = await this.exerciseInPlanRepository.save(
+        newExercises
+      );
+    }
+
+    // Save and return updated workout plan
+    const savedWorkoutPlan = await this.workoutPlanRepository.save(workoutPlan);
+
+    this.logger.debug(
+      `Updated workout plan: ${this.stringifyWithoutCircularReferences(
+        savedWorkoutPlan
+      )}`
+    );
+
+    return this.sanitizeWorkoutPlan(savedWorkoutPlan);
   }
 
-  async remove(id: string): Promise<void> {
-    await this.workoutPlanRepository.delete(id);
+  private stringifyWithoutCircularReferences(obj: any): string {
+    const seen = new WeakSet();
+    return JSON.stringify(obj, (key, value) => {
+      if (typeof value === 'object' && value !== null) {
+        if (seen.has(value)) {
+          return '[Circular]';
+        }
+        seen.add(value);
+      }
+      return value;
+    });
   }
 
-  private sanitizeWorkoutPlan(workoutPlan: WorkoutPlan): Partial<WorkoutPlan> {
+  private sanitizeWorkoutPlan(workoutPlan: WorkoutPlan): WorkoutPlan {
     return {
       ...workoutPlan,
       exercises: workoutPlan.exercises?.map((exercise) => ({
         ...exercise,
-        workoutPlan: undefined, // Remove the circular reference
+        workoutPlan: undefined,
       })),
     };
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.workoutPlanRepository.delete(id);
   }
 }
