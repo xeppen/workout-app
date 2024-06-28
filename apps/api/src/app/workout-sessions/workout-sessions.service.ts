@@ -21,13 +21,38 @@ export class WorkoutSessionsService {
   async create(
     createWorkoutSessionDto: CreateWorkoutSessionDto
   ): Promise<WorkoutSession> {
-    const newSession = this.workoutSessionRepository.create({
-      userId: createWorkoutSessionDto.userId,
-      workoutPlanId: createWorkoutSessionDto.workoutPlanId,
-      date: new Date(),
-      notes: createWorkoutSessionDto.notes,
+    const { exercisesPerformed, ...sessionData } = createWorkoutSessionDto;
+
+    const workoutSession = this.workoutSessionRepository.create(sessionData);
+    await this.workoutSessionRepository.save(workoutSession);
+
+    if (exercisesPerformed && exercisesPerformed.length > 0) {
+      for (const exercisePerformedData of exercisesPerformed) {
+        const exercisePerformed = this.exercisePerformedRepository.create({
+          exerciseId: exercisePerformedData.exerciseId,
+          workoutSession,
+        });
+        await this.exercisePerformedRepository.save(exercisePerformed);
+
+        if (
+          exercisePerformedData.sets &&
+          exercisePerformedData.sets.length > 0
+        ) {
+          for (const setData of exercisePerformedData.sets) {
+            const set = this.setRepository.create({
+              ...setData,
+              exercisePerformed,
+            });
+            await this.setRepository.save(set);
+          }
+        }
+      }
+    }
+
+    return this.workoutSessionRepository.findOne({
+      where: { id: workoutSession.id },
+      relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
     });
-    return await this.workoutSessionRepository.save(newSession);
   }
 
   async findAll(): Promise<WorkoutSession[]> {

@@ -1,27 +1,38 @@
 import {
   IsString,
-  IsNotEmpty,
+  IsOptional,
   IsArray,
   ValidateNested,
-  IsOptional,
+  IsNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ExerciseInPlanDto } from './execise-in-plan.dto';
+
+class UpdateExerciseInPlanDto {
+  @IsString()
+  exerciseId: string;
+
+  @IsNumber()
+  sets: number;
+
+  @IsNumber()
+  reps: number;
+
+  @IsNumber()
+  restTime: number;
+}
 
 export class UpdateWorkoutPlanDto {
-  @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsString()
   name?: string;
 
-  @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsString()
   description?: string;
 
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ExerciseInPlanDto)
-  @IsOptional()
-  exercises?: ExerciseInPlanDto[];
+  @Type(() => UpdateExerciseInPlanDto)
+  exercises?: UpdateExerciseInPlanDto[];
 }
