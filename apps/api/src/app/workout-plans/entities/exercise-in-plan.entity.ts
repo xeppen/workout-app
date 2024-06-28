@@ -7,14 +7,14 @@ export class ExerciseInPlan {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  exerciseId: string;
+  @ManyToOne(() => WorkoutPlan, (workoutPlan) => workoutPlan.exercises)
+  workoutPlan: WorkoutPlan;
 
   @ManyToOne(() => Exercise)
   exercise: Exercise;
 
-  @ManyToOne(() => WorkoutPlan, (workoutPlan) => workoutPlan.exercises)
-  workoutPlan: WorkoutPlan;
+  @Column()
+  exerciseId: string;
 
   @Column()
   sets: number;
