@@ -100,6 +100,21 @@ describe('WorkoutPlansController', () => {
 
       expect(await controller.update('1', updateWorkoutPlanDto)).toBe(result);
     });
+
+    it('should throw an error when update fails', async () => {
+      const updateWorkoutPlanDto: UpdateWorkoutPlanDto = {
+        name: 'Updated Plan',
+        description: 'Updated Description',
+      };
+
+      const error = new NotFoundException('Workout plan not found');
+      jest.spyOn(service, 'update').mockRejectedValue(error);
+
+      await expect(
+        controller.update('1', updateWorkoutPlanDto)
+      ).rejects.toThrow(NotFoundException);
+      expect(service.update).toHaveBeenCalledWith('1', updateWorkoutPlanDto);
+    });
   });
 
   describe('remove', () => {
