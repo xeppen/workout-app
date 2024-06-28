@@ -134,18 +134,4 @@ export class WorkoutPlansService {
   async remove(id: string): Promise<void> {
     await this.workoutPlanRepository.delete(id);
   }
-
-  public async updateForTesting(
-    id: string,
-    updateWorkoutPlanDto: UpdateWorkoutPlanDto
-  ): Promise<any> {
-    const result = await this.update(id, updateWorkoutPlanDto);
-    return {
-      ...result,
-      exercises: result.exercises?.map((exercise) => ({
-        ...exercise,
-        workoutPlan: undefined, // Remove circular reference for easier testing
-      })),
-    };
-  }
 }
