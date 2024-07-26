@@ -1,12 +1,9 @@
 export interface Exercise {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  // Add more properties as needed, for example:
-  // muscleGroup: string;
-  // difficulty: 'beginner' | 'intermediate' | 'advanced';
-  // equipment: string[];
-  // instructions: string[];
+  targetMuscleGroups: string[];
+  videoURL: string | null;
 }
 
 // You can also define related types here, for example:
