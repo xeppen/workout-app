@@ -72,10 +72,37 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border: var(--border);
   }
   body {
-    @apply bg-background text-foreground;
+    background: var(--background);
+    color: var(--foreground);
     font-feature-settings: 'rlig' 1, 'calt' 1;
   }
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+.nav-link {
+  color: white;
+  margin-left: 16px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  text-decoration: underline;
+}
+
+.container {
+  padding: 24px;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 24px;
 }
