@@ -1,9 +1,16 @@
+// src/app/components/ExerciseManagement.tsx
+'use client';
+
 import React, { useState } from 'react';
-import { useQuery } from 'react-query';
+import {
+  useQuery,
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
 import { Search, Info } from 'lucide-react';
 import { Input } from '@/ui/input';
 import { Button } from '@/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
+import { Card, CardHeader, CardTitle } from '@/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +21,7 @@ import {
 import { Exercise } from '@/types';
 
 // Mock API function - replace with actual API call
-const fetchExercises = async () => {
+const fetchExercises = async (): Promise<Exercise[]> => {
   // Simulated API call
   return [
     { id: 1, name: 'Push-ups', description: 'Classic upper body exercise' },
@@ -23,7 +30,7 @@ const fetchExercises = async () => {
   ];
 };
 
-const ExerciseCard = ({ exercise }: { exercise: Exercise }) => (
+const ExerciseCard: React.FC<{ exercise: Exercise }> = ({ exercise }) => (
   <Card className="mb-4">
     <CardHeader>
       <CardTitle className="flex justify-between items-center">
@@ -46,24 +53,27 @@ const ExerciseCard = ({ exercise }: { exercise: Exercise }) => (
   </Card>
 );
 
-const ExerciseManagement = () => {
+const ExerciseList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const {
     data: exercises,
     isLoading,
     error,
-  } = useQuery('exercises', fetchExercises);
+  } = useQuery<Exercise[], Error>({
+    queryKey: ['exercises'],
+    queryFn: fetchExercises,
+  });
 
-  const filteredExercises = exercises?.filter((exercise) =>
-    exercise.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredExercises =
+    exercises?.filter((exercise) =>
+      exercise.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ) ?? [];
 
   if (isLoading) return <div>Loading exercises...</div>;
-  if (error) return <div>Error loading exercises</div>;
+  if (error) return <div>Error loading exercises: {error.message}</div>;
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Exercise Management</h1>
       <div className="mb-4 relative">
         <Input
           type="text"
@@ -74,10 +84,21 @@ const ExerciseManagement = () => {
         />
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
       </div>
-      {filteredExercises?.map((exercise) => (
+      {filteredExercises.map((exercise) => (
         <ExerciseCard key={exercise.id} exercise={exercise} />
       ))}
     </div>
+  );
+};
+
+const ExerciseManagement: React.FC = () => {
+  const queryClient = new QueryClient();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <h1 className="text-2xl font-bold mb-4">Exercise Management</h1>
+      <ExerciseList />
+    </QueryClientProvider>
   );
 };
 

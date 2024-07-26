@@ -1,12 +1,15 @@
+// src/app/layout.tsx
+'use client';
+
 import './globals.css';
 import { Inter } from 'next/font/google';
+import Link from 'next/link';
+import { AppBar, Toolbar, Typography, Container } from '@mui/material';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 const inter = Inter({ subsets: ['latin'] });
-
-export const metadata = {
-  title: 'Workout App',
-  description: 'Track your workouts and progress',
-};
+const queryClient = new QueryClient();
 
 export default function RootLayout({
   children,
@@ -16,26 +19,43 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <nav className="bg-gray-800 text-white p-4">
-          <ul className="flex space-x-4">
-            <li>
-              <a href="/" className="hover:text-gray-300">
-                Home
-              </a>
-            </li>
-            <li>
-              <a href="/workouts" className="hover:text-gray-300">
-                Workouts
-              </a>
-            </li>
-            <li>
-              <a href="/progress" className="hover:text-gray-300">
-                Progress
-              </a>
-            </li>
-          </ul>
-        </nav>
-        <main className="container mx-auto p-4">{children}</main>
+        <QueryClientProvider client={queryClient}>
+          <div className="min-h-screen bg-gradient-to-r from-blue-200 to-blue-500">
+            <AppBar position="static" color="primary">
+              <Toolbar>
+                <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                  Workout App
+                </Typography>
+                <nav>
+                  <Link href="/" passHref>
+                    <Typography variant="button" className="nav-link">
+                      Home
+                    </Typography>
+                  </Link>
+                  <Link href="/workouts" passHref>
+                    <Typography variant="button" className="nav-link">
+                      Workouts
+                    </Typography>
+                  </Link>
+                  <Link href="/progress" passHref>
+                    <Typography variant="button" className="nav-link">
+                      Progress
+                    </Typography>
+                  </Link>
+                  <Link href="/exercises" passHref>
+                    <Typography variant="button" className="nav-link">
+                      Exercises
+                    </Typography>
+                  </Link>
+                </nav>
+              </Toolbar>
+            </AppBar>
+            <Container maxWidth="lg" className="py-6">
+              {children}
+            </Container>
+          </div>
+          <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
       </body>
     </html>
   );
