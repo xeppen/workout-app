@@ -8,6 +8,7 @@ import { ProgressRecordsModule } from './progress-records/progress-records.modul
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getTypeOrmConfig } from '../config/typeorm.config';
+import { SupabaseService } from '../service/subabase.service';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { getTypeOrmConfig } from '../config/typeorm.config';
     ProgressRecordsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, SupabaseService],
+  exports: [SupabaseService],
 })
 export class AppModule {}
