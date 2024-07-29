@@ -3,9 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ExercisesService } from './exercises.service';
 import { ExercisesController } from './exercises.controller';
 import { Exercise } from './entities/exercise.entity';
+import { SupabaseModule } from '../modules/supabase.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Exercise])],
+  imports: [TypeOrmModule.forFeature([Exercise]), SupabaseModule],
   controllers: [ExercisesController],
   providers: [ExercisesService],
 })

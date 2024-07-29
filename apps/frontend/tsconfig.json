@@ -16,7 +16,8 @@
       "@/*": ["./src/*"],
       "@/components/*": ["./src/app/components/*"],
       "@/ui/*": ["./src/app/components/ui/*"],
-      "@/types": ["./src/types"]
+      "@/types": ["./src/types"],
+      "@/api/*": ["./src/api/*"]
     },
     "plugins": [
       {
