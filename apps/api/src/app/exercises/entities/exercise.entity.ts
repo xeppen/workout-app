@@ -3,7 +3,7 @@ import { ProgressRecord } from '../../progress-records/entities/progress-record.
 import { ExerciseInPlan } from './../../workout-plans/entities/exercise-in-plan.entity'; // Define ExerciseInPlan entity if needed
 import { ExercisePerformed } from '../../workout-sessions/entities/exercise-performed.entity';
 
-@Entity()
+@Entity('exercises')
 export class Exercise {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -14,10 +14,10 @@ export class Exercise {
   @Column('text')
   description: string;
 
-  @Column('simple-array')
+  @Column('simple-array', { name: 'target_muscle_groups' })
   targetMuscleGroups: string[];
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'video_url' })
   videoURL: string;
 
   @OneToMany(() => ProgressRecord, (progressRecord) => progressRecord.exercise)
