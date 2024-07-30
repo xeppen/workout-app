@@ -25,8 +25,17 @@ describe('SupabaseService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should return the supabase client', () => {
-    const client = service.getClient();
-    expect(client).toBe(supabase);
+  describe('getClient', () => {
+    it('should return the supabase client when NODE_ENV is not test', () => {
+      process.env.NODE_ENV = 'development';
+      const client = service.getClient();
+      expect(client).toBe(supabase);
+    });
+
+    it('should return null when NODE_ENV is test', () => {
+      process.env.NODE_ENV = 'test';
+      const client = service.getClient();
+      expect(client).toBeNull();
+    });
   });
 });

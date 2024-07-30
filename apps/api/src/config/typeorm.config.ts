@@ -32,7 +32,7 @@ export const getTypeOrmConfig = (): TypeOrmModuleOptions => {
     return {
       type: 'sqlite',
       database: ':memory:',
-      entities: entities,
+      entities: [__dirname + '/../**/*.entity{.ts,.js}'],
       synchronize: true,
       logging: false,
     };

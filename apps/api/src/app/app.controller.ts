@@ -8,6 +8,11 @@ export class AppController {
 
   @Get()
   getData() {
-    return this.appService.getData();
+    return { message: 'Hello API' };
+  }
+
+  @Get('api')
+  getDataWithPrefix() {
+    return { message: 'Hello API' };
   }
 }

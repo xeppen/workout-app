@@ -9,7 +9,7 @@ async function bootstrap() {
     logger: ['error', 'warn', 'debug', 'log', 'verbose'],
   });
   app.enableCors({
-    origin: 'http://localhost:4200', // Your frontend URL
+    origin: 'http://localhost:4200',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
@@ -20,6 +20,23 @@ async function bootstrap() {
   Logger.log(
     `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
   );
+
+  // Log all registered routes
+  const server = app.getHttpServer();
+  const router = server._events.request._router;
+  const availableRoutes: [] = router.stack
+    .map((layer) => {
+      if (layer.route) {
+        return {
+          route: {
+            path: layer.route?.path,
+            method: layer.route?.stack[0].method,
+          },
+        };
+      }
+    })
+    .filter((item) => item !== undefined);
+  Logger.log('Available Routes:', JSON.stringify(availableRoutes, null, 2));
 }
 
 bootstrap();
