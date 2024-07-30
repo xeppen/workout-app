@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, Logger } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app/app.module';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 describe('WorkoutApp (e2e)', () => {
   let app: INestApplication;
@@ -11,7 +13,7 @@ describe('WorkoutApp (e2e)', () => {
   let logger: Logger;
 
   beforeAll(async () => {
-    (process.env as any).NODE_ENV = 'test';
+    dotenv.config({ path: path.resolve(__dirname, '../../.env.test') });
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -20,6 +22,8 @@ describe('WorkoutApp (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
     logger = new Logger('E2E Test');
+    logger.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+    logger.log(`USE_SUPABASE: ${process.env.USE_SUPABASE}`);
   }, 30000);
 
   afterAll(async () => {
@@ -28,11 +32,16 @@ describe('WorkoutApp (e2e)', () => {
     }
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect({ message: 'Hello API' });
+  it('/ (GET)', async () => {
+    const response = await request(app.getHttpServer()).get('/api');
+
+    if (response.status !== 200) {
+      console.log('Response body:', response.body);
+      console.log('Response status:', response.status);
+    }
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ message: 'Hello API' });
   });
 
   it('1. User Registration and Profile Creation', async () => {
