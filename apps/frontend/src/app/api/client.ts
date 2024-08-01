@@ -1,5 +1,5 @@
 // src/api/client.ts
-import { Exercise } from '@/types';
+import { Exercise, WorkoutSession } from '@/types';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333/api'; // Adjust the port if needed
@@ -13,5 +13,9 @@ export const apiClient = axios.create({
 
 export const fetchExercises = async (): Promise<Exercise[]> => {
   const response = await apiClient.get('/exercises');
+  return response.data;
+};
+export const fetchWorkoutSessions = async (): Promise<WorkoutSession[]> => {
+  const response = await apiClient.get('/workout-sessions');
   return response.data;
 };

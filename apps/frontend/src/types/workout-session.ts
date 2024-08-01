@@ -2,17 +2,28 @@
 export interface WorkoutSession {
   id: string;
   userId: string;
-  workoutPlanId: string;
+  workoutPlanId?: string;
   date: Date;
   exercisesPerformed: ExercisePerformed[];
   notes?: string;
+  completed: boolean;
 }
 
 export interface ExercisePerformed {
   id: string;
+  exerciseId: string;
+  exercise: Exercise;
+  sets: Set[];
+}
+
+export interface Exercise {
+  id: string;
   name: string;
-  sets: number;
+  // Add other properties as needed
+}
+
+export interface Set {
+  id?: string; // Make id optional as it might not be available when creating a new set
   reps: number;
   weight: number;
-  // Add other properties as needed
 }
