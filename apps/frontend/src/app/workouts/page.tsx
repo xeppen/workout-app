@@ -1,69 +1,78 @@
 // apps/frontend/src/app/workouts/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchWorkoutSessions, apiClient } from '@/app/api/client';
 import { WorkoutSession } from '@/types/workout-session';
 
 export default function Workouts() {
-  const [workouts, setWorkouts] = useState<WorkoutSession[]>([]);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchWorkouts();
-  }, []);
+  const {
+    data: workouts,
+    isLoading,
+    error,
+  } = useQuery<WorkoutSession[], Error>({
+    queryKey: ['workoutSessions'],
+    queryFn: fetchWorkoutSessions,
+  });
 
-  const fetchWorkouts = async () => {
-    try {
-      const response = await axios.get('/api/workout-sessions');
-      setWorkouts(response.data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching workouts:', error);
-      setLoading(false);
-    }
-  };
+  const createWorkoutMutation = useMutation({
+    mutationFn: (newWorkout: Partial<WorkoutSession>) =>
+      apiClient.post('/workout-sessions', newWorkout),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workoutSessions'] });
+    },
+  });
 
   const startNewWorkout = async () => {
     try {
-      const response = await axios.post('/api/workout-sessions', {
+      const response = await createWorkoutMutation.mutateAsync({
         date: new Date(),
-        // Add other necessary fields
       });
-      router.push(`/workouts/${response.data.id}`);
+      router.push(`/workouts/active/${response.data.id}`);
     } catch (error) {
       console.error('Error starting new workout:', error);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
+
   return (
-    <div>
+    <div className="container mx-auto px-4">
       <h1 className="text-3xl font-bold mb-4">Your Workouts</h1>
       <button
         onClick={startNewWorkout}
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded mb-6"
       >
         Start New Workout
       </button>
       <div className="mt-4">
         <h2 className="text-2xl font-bold mb-2">Previous Workouts</h2>
-        {workouts.map((workout) => (
-          <div key={workout.id} className="border p-4 mb-2">
-            <p>Date: {new Date(workout.date).toLocaleDateString()}</p>
-            <button
-              onClick={() => router.push(`/workouts/${workout.id}`)}
-              className="mt-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-1 px-2 rounded"
-            >
-              View Details
-            </button>
-          </div>
-        ))}
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {workouts &&
+            workouts.map((workout) => (
+              <div key={workout.id} className="border p-4 rounded shadow">
+                <p className="font-semibold">
+                  Date: {new Date(workout.date).toLocaleDateString()}
+                </p>
+                <button
+                  onClick={() => router.push(`/workouts/${workout.id}`)}
+                  className="mt-2 w-full bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+                >
+                  View Details
+                </button>
+              </div>
+            ))}
+        </div>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ import { User } from '../../users/entities/user.entity';
 import { WorkoutPlan } from '../../workout-plans/entities/workout-plan.entity';
 import { ExercisePerformed } from './exercise-performed.entity';
 
-@Entity()
+@Entity('workout_sessions')
 export class WorkoutSession {
   @PrimaryGeneratedColumn('uuid')
   id: string;
