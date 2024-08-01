@@ -113,9 +113,9 @@ describe('WorkoutApp (e2e)', () => {
           {
             exerciseId: exerciseId,
             sets: [
-              { reps: 10, weight: 100 },
-              { reps: 8, weight: 110 },
-              { reps: 6, weight: 120 },
+              { reps: 10, weight: 100, order: 0 },
+              { reps: 8, weight: 110, order: 1 },
+              { reps: 6, weight: 120, order: 2 },
             ],
           },
         ],
@@ -127,6 +127,9 @@ describe('WorkoutApp (e2e)', () => {
     expect(response.body.exercisesPerformed).toBeDefined();
     expect(response.body.exercisesPerformed).toHaveLength(1);
     expect(response.body.exercisesPerformed[0].sets).toHaveLength(3);
+    expect(response.body.exercisesPerformed[0].sets[0].order).toBe(0);
+    expect(response.body.exercisesPerformed[0].sets[1].order).toBe(1);
+    expect(response.body.exercisesPerformed[0].sets[2].order).toBe(2);
   });
 
   it('4. Tracking Progress Over Time', async () => {

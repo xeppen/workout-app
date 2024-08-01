@@ -7,6 +7,7 @@ import {
   ValidateNested,
   IsNumber,
   IsDateString,
+  Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -28,24 +29,50 @@ class ExercisePerformedDto {
   sets: SetDto[];
 }
 
+export class CreateSetDto {
+  @IsNumber()
+  @Min(1)
+  reps: number;
+
+  @IsNumber()
+  @Min(0)
+  weight: number;
+
+  @IsNumber()
+  @Min(0)
+  order: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  restTime?: number;
+}
+
+export class CreateExercisePerformedDto {
+  @IsUUID()
+  exerciseId: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateSetDto)
+  sets: CreateSetDto[];
+}
+
 export class CreateWorkoutSessionDto {
   @IsUUID()
   userId: string;
 
-  @IsOptional()
   @IsUUID()
-  workoutPlanId?: string;
+  workoutPlanId: string;
 
   @IsDateString()
   date: string;
 
   @IsOptional()
-  @IsString()
   notes?: string;
 
-  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ExercisePerformedDto)
-  exercisesPerformed?: ExercisePerformedDto[];
+  @Type(() => CreateExercisePerformedDto)
+  exercisesPerformed: CreateExercisePerformedDto[];
 }
