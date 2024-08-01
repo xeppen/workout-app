@@ -6,6 +6,7 @@ import {
   IsArray,
   ValidateNested,
   IsNumber,
+  IsDateString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -31,15 +32,20 @@ export class CreateWorkoutSessionDto {
   @IsUUID()
   userId: string;
 
+  @IsOptional()
   @IsUUID()
-  workoutPlanId: string;
+  workoutPlanId?: string;
+
+  @IsDateString()
+  date: string;
 
   @IsOptional()
   @IsString()
   notes?: string;
 
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ExercisePerformedDto)
-  exercisesPerformed: ExercisePerformedDto[];
+  exercisesPerformed?: ExercisePerformedDto[];
 }

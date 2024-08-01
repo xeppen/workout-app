@@ -1,5 +1,6 @@
 // update-workout-session.dto.ts
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { SetDto } from './add-set.dto';
 
 export class UpdateWorkoutSessionDto {
   @IsOptional()
@@ -18,9 +19,4 @@ export class ExercisePerformedDto {
   id?: string;
   exerciseId: string;
   sets: SetDto[];
-}
-
-export class SetDto {
-  reps: number;
-  weight: number;
 }
