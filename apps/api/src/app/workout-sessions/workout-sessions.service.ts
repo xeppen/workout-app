@@ -118,12 +118,17 @@ export class WorkoutSessionsService {
       sets: [],
     });
 
-    for (const setData of addExerciseDto.sets) {
-      const set = this.setRepository.create(setData);
-      exercisePerformed.sets.push(set);
-    }
+    const savedExercisePerformed = await this.exercisePerformedRepository.save(
+      exercisePerformed
+    );
 
-    await this.exercisePerformedRepository.save(exercisePerformed);
+    for (const setData of addExerciseDto.sets) {
+      const set = this.setRepository.create({
+        ...setData,
+        exercisePerformed: savedExercisePerformed,
+      });
+      await this.setRepository.save(set);
+    }
 
     return this.findOne(sessionId);
   }

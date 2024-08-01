@@ -6,6 +6,7 @@ import { ExercisePerformed } from './entities/exercise-performed.entity';
 import { Set } from './entities/set.entity';
 import { CreateWorkoutSessionDto } from './dto/create-workout-session.dto';
 import { UpdateWorkoutSessionDto } from './dto/update-workout-session.dto';
+import { AddExerciseDto } from './dto/add-exercise.dto';
 
 describe('WorkoutSessionsService', () => {
   let service: WorkoutSessionsService;
@@ -63,6 +64,7 @@ describe('WorkoutSessionsService', () => {
         userId: 'user-id',
         workoutPlanId: 'plan-id',
         notes: 'Test session',
+        date: new Date().toISOString(),
         exercisesPerformed: [
           {
             exerciseId: 'exercise-id',
@@ -188,6 +190,11 @@ describe('WorkoutSessionsService', () => {
         { reps: 8, weight: 110 },
       ];
 
+      const addExerciseDto: AddExerciseDto = {
+        exerciseId,
+        sets,
+      };
+
       const mockSession: Partial<WorkoutSession> = {
         id: sessionId,
         exercisesPerformed: [],
@@ -198,11 +205,6 @@ describe('WorkoutSessionsService', () => {
         workoutSession: mockSession as WorkoutSession,
         sets: [],
       };
-      const mockSets: Partial<Set>[] = sets.map((set, index) => ({
-        id: `set-id-${index}`,
-        ...set,
-        exercisePerformed: mockExercisePerformed as ExercisePerformed,
-      }));
 
       mockWorkoutSessionRepository.findOneOrFail.mockResolvedValue(mockSession);
       mockExercisePerformedRepository.create.mockReturnValue(
@@ -216,24 +218,41 @@ describe('WorkoutSessionsService', () => {
 
       const result = await service.addExerciseToSession(
         sessionId,
-        exerciseId,
-        sets
+        addExerciseDto
       );
 
       expect(result).toEqual(mockSession);
       expect(mockWorkoutSessionRepository.findOneOrFail).toHaveBeenCalledWith({
         where: { id: sessionId },
         relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
+        order: {
+          exercisesPerformed: {
+            id: 'ASC',
+            sets: {
+              id: 'ASC',
+            },
+          },
+        },
       });
       expect(mockExercisePerformedRepository.create).toHaveBeenCalledWith({
         exerciseId,
         workoutSession: mockSession,
+        sets: [],
       });
       expect(mockExercisePerformedRepository.save).toHaveBeenCalledWith(
         mockExercisePerformed
       );
       expect(mockSetRepository.create).toHaveBeenCalledTimes(sets.length);
+      sets.forEach((set, index) => {
+        expect(mockSetRepository.create).toHaveBeenNthCalledWith(index + 1, {
+          ...set,
+          exercisePerformed: mockExercisePerformed,
+        });
+      });
       expect(mockSetRepository.save).toHaveBeenCalledTimes(sets.length);
+      expect(mockWorkoutSessionRepository.findOneOrFail).toHaveBeenCalledTimes(
+        2
+      );
     });
   });
 
@@ -273,6 +292,14 @@ describe('WorkoutSessionsService', () => {
       expect(mockWorkoutSessionRepository.findOneOrFail).toHaveBeenCalledWith({
         where: { id: '1' },
         relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
+        order: {
+          exercisesPerformed: {
+            id: 'ASC',
+            sets: {
+              id: 'ASC',
+            },
+          },
+        },
       });
     });
   });
@@ -299,6 +326,14 @@ describe('WorkoutSessionsService', () => {
       expect(mockWorkoutSessionRepository.findOneOrFail).toHaveBeenCalledWith({
         where: { id: '1' },
         relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
+        order: {
+          exercisesPerformed: {
+            id: 'ASC',
+            sets: {
+              id: 'ASC',
+            },
+          },
+        },
       });
       expect(mockWorkoutSessionRepository.save).toHaveBeenCalledWith(
         mockSession
