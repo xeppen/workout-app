@@ -24,7 +24,7 @@ export class WorkoutSession {
   @ManyToOne(() => WorkoutPlan, (workoutPlan) => workoutPlan.workoutSessions)
   workoutPlan: WorkoutPlan;
 
-  @Column()
+  @Column({ nullable: true })
   workoutPlanId: string;
 
   @Column()
@@ -38,4 +38,7 @@ export class WorkoutSession {
 
   @Column({ nullable: true })
   notes?: string;
+
+  @Column({ default: false })
+  completed: boolean;
 }

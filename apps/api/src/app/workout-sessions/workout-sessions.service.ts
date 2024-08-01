@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkoutSession } from './entities/workout-session.entity';
@@ -6,6 +6,8 @@ import { ExercisePerformed } from './entities/exercise-performed.entity';
 import { Set } from './entities/set.entity';
 import { CreateWorkoutSessionDto } from './dto/create-workout-session.dto';
 import { UpdateWorkoutSessionDto } from './dto/update-workout-session.dto';
+import { AddSetDto, SetDto } from './dto/add-set.dto';
+import { AddExerciseDto } from './dto/add-exercise.dto';
 
 @Injectable()
 export class WorkoutSessionsService {
@@ -22,6 +24,11 @@ export class WorkoutSessionsService {
     createWorkoutSessionDto: CreateWorkoutSessionDto
   ): Promise<WorkoutSession> {
     const { exercisesPerformed, ...sessionData } = createWorkoutSessionDto;
+
+    // Ensure date is set if not provided
+    if (!sessionData.date) {
+      sessionData.date = new Date().toDateString();
+    }
 
     const workoutSession = this.workoutSessionRepository.create(sessionData);
     await this.workoutSessionRepository.save(workoutSession);
@@ -65,6 +72,14 @@ export class WorkoutSessionsService {
     return await this.workoutSessionRepository.findOneOrFail({
       where: { id },
       relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
+      order: {
+        exercisesPerformed: {
+          id: 'ASC',
+          sets: {
+            id: 'ASC',
+          },
+        },
+      },
     });
   }
 
@@ -94,26 +109,43 @@ export class WorkoutSessionsService {
 
   async addExerciseToSession(
     sessionId: string,
-    exerciseId: string,
-    sets: { reps: number; weight: number }[]
+    addExerciseDto: AddExerciseDto
   ): Promise<WorkoutSession> {
     const session = await this.findOne(sessionId);
     const exercisePerformed = this.exercisePerformedRepository.create({
-      exerciseId,
+      exerciseId: addExerciseDto.exerciseId,
       workoutSession: session,
+      sets: [],
     });
-    const savedExercisePerformed = await this.exercisePerformedRepository.save(
-      exercisePerformed
+
+    for (const setData of addExerciseDto.sets) {
+      const set = this.setRepository.create(setData);
+      exercisePerformed.sets.push(set);
+    }
+
+    await this.exercisePerformedRepository.save(exercisePerformed);
+
+    return this.findOne(sessionId);
+  }
+
+  async addSetToExercise(
+    sessionId: string,
+    exerciseId: string,
+    addSetDto: AddSetDto
+  ): Promise<WorkoutSession> {
+    const session = await this.findOne(sessionId);
+    const exercisePerformed = session.exercisesPerformed.find(
+      (ep) => ep.exerciseId === exerciseId
     );
 
-    for (const setData of sets) {
-      const set = this.setRepository.create({
-        reps: setData.reps,
-        weight: setData.weight,
-        exercisePerformed: savedExercisePerformed,
-      });
-      await this.setRepository.save(set);
+    if (!exercisePerformed) {
+      throw new NotFoundException('Exercise not found in session');
     }
+
+    const set = this.setRepository.create(addSetDto);
+    exercisePerformed.sets.push(set);
+
+    await this.exercisePerformedRepository.save(exercisePerformed);
 
     return this.findOne(sessionId);
   }
