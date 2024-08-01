@@ -69,8 +69,8 @@ describe('WorkoutSessionsService', () => {
           {
             exerciseId: 'exercise-id',
             sets: [
-              { reps: 10, weight: 100 },
-              { reps: 8, weight: 110 },
+              { reps: 10, weight: 100, order: 0 },
+              { reps: 8, weight: 110, order: 1 },
             ],
           },
         ],
@@ -186,8 +186,8 @@ describe('WorkoutSessionsService', () => {
       const sessionId = 'session-id';
       const exerciseId = 'exercise-id';
       const sets = [
-        { reps: 10, weight: 100 },
-        { reps: 8, weight: 110 },
+        { reps: 10, weight: 100, order: 0 },
+        { reps: 8, weight: 110, order: 1 },
       ];
 
       const addExerciseDto: AddExerciseDto = {
@@ -199,22 +199,19 @@ describe('WorkoutSessionsService', () => {
         id: sessionId,
         exercisesPerformed: [],
       };
-      const mockExercisePerformed: Partial<ExercisePerformed> = {
-        id: 'exercise-performed-id',
-        exerciseId,
-        workoutSession: mockSession as WorkoutSession,
-        sets: [],
+
+      const mockTransactionManager = {
+        findOneOrFail: jest.fn().mockResolvedValue(mockSession),
+        create: jest.fn().mockImplementation((entity, data) => data),
+        save: jest.fn().mockImplementation((entity) => Promise.resolve(entity)),
       };
 
-      mockWorkoutSessionRepository.findOneOrFail.mockResolvedValue(mockSession);
-      mockExercisePerformedRepository.create.mockReturnValue(
-        mockExercisePerformed
-      );
-      mockExercisePerformedRepository.save.mockResolvedValue(
-        mockExercisePerformed
-      );
-      mockSetRepository.create.mockImplementation((setData) => setData);
-      mockSetRepository.save.mockImplementation((set) => Promise.resolve(set));
+      mockWorkoutSessionRepository.manager = {
+        transaction: jest.fn().mockImplementation(async (cb) => {
+          await cb(mockTransactionManager);
+          return mockSession;
+        }),
+      };
 
       const result = await service.addExerciseToSession(
         sessionId,
@@ -222,37 +219,21 @@ describe('WorkoutSessionsService', () => {
       );
 
       expect(result).toEqual(mockSession);
-      expect(mockWorkoutSessionRepository.findOneOrFail).toHaveBeenCalledWith({
-        where: { id: sessionId },
-        relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
-        order: {
-          exercisesPerformed: {
-            id: 'ASC',
-            sets: {
-              id: 'ASC',
-            },
-          },
-        },
-      });
-      expect(mockExercisePerformedRepository.create).toHaveBeenCalledWith({
-        exerciseId,
-        workoutSession: mockSession,
-        sets: [],
-      });
-      expect(mockExercisePerformedRepository.save).toHaveBeenCalledWith(
-        mockExercisePerformed
+      expect(mockTransactionManager.findOneOrFail).toHaveBeenCalledWith(
+        WorkoutSession,
+        {
+          where: { id: sessionId },
+          relations: ['exercisesPerformed'],
+        }
       );
-      expect(mockSetRepository.create).toHaveBeenCalledTimes(sets.length);
-      sets.forEach((set, index) => {
-        expect(mockSetRepository.create).toHaveBeenNthCalledWith(index + 1, {
-          ...set,
-          exercisePerformed: mockExercisePerformed,
-        });
-      });
-      expect(mockSetRepository.save).toHaveBeenCalledTimes(sets.length);
-      expect(mockWorkoutSessionRepository.findOneOrFail).toHaveBeenCalledTimes(
-        2
+      expect(mockTransactionManager.create).toHaveBeenCalledWith(
+        ExercisePerformed,
+        expect.objectContaining({
+          exerciseId,
+          workoutSession: mockSession,
+        })
       );
+      expect(mockTransactionManager.save).toHaveBeenCalledTimes(3); // Once for ExercisePerformed, twice for Sets
     });
   });
 
@@ -296,7 +277,7 @@ describe('WorkoutSessionsService', () => {
           exercisesPerformed: {
             id: 'ASC',
             sets: {
-              id: 'ASC',
+              order: 'ASC',
             },
           },
         },
@@ -330,7 +311,7 @@ describe('WorkoutSessionsService', () => {
           exercisesPerformed: {
             id: 'ASC',
             sets: {
-              id: 'ASC',
+              order: 'ASC',
             },
           },
         },

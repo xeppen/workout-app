@@ -22,15 +22,18 @@ export class Set {
   @Column({ nullable: true })
   restTime?: number;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  @Column()
+  order: number; // Add this line
 
   @ManyToOne(
     () => ExercisePerformed,
     (exercisePerformed) => exercisePerformed.sets
   )
   exercisePerformed: ExercisePerformed;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

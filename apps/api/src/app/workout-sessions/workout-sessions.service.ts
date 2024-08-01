@@ -76,7 +76,7 @@ export class WorkoutSessionsService {
         exercisesPerformed: {
           id: 'ASC',
           sets: {
-            id: 'ASC',
+            order: 'ASC', // Order by the new 'order' field
           },
         },
       },
@@ -111,26 +111,38 @@ export class WorkoutSessionsService {
     sessionId: string,
     addExerciseDto: AddExerciseDto
   ): Promise<WorkoutSession> {
-    const session = await this.findOne(sessionId);
-    const exercisePerformed = this.exercisePerformedRepository.create({
-      exerciseId: addExerciseDto.exerciseId,
-      workoutSession: session,
-      sets: [],
-    });
+    return this.workoutSessionRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        const session = await transactionalEntityManager.findOneOrFail(
+          WorkoutSession,
+          {
+            where: { id: sessionId },
+            relations: ['exercisesPerformed'],
+          }
+        );
 
-    const savedExercisePerformed = await this.exercisePerformedRepository.save(
-      exercisePerformed
+        const exercisePerformed = transactionalEntityManager.create(
+          ExercisePerformed,
+          {
+            exerciseId: addExerciseDto.exerciseId,
+            workoutSession: session,
+          }
+        );
+
+        await transactionalEntityManager.save(exercisePerformed);
+
+        for (const [index, setData] of addExerciseDto.sets.entries()) {
+          const set = transactionalEntityManager.create(Set, {
+            ...setData,
+            exercisePerformed,
+            order: index,
+          });
+          await transactionalEntityManager.save(set);
+        }
+
+        return this.findOne(sessionId);
+      }
     );
-
-    for (const setData of addExerciseDto.sets) {
-      const set = this.setRepository.create({
-        ...setData,
-        exercisePerformed: savedExercisePerformed,
-      });
-      await this.setRepository.save(set);
-    }
-
-    return this.findOne(sessionId);
   }
 
   async addSetToExercise(
@@ -147,10 +159,14 @@ export class WorkoutSessionsService {
       throw new NotFoundException('Exercise not found in session');
     }
 
-    const set = this.setRepository.create(addSetDto);
-    exercisePerformed.sets.push(set);
+    const newOrder = exercisePerformed.sets.length; // Get the next order number
+    const set = this.setRepository.create({
+      ...addSetDto,
+      exercisePerformed,
+      order: newOrder,
+    });
 
-    await this.exercisePerformedRepository.save(exercisePerformed);
+    await this.setRepository.save(set);
 
     return this.findOne(sessionId);
   }

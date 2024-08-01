@@ -98,6 +98,9 @@ describe('WorkoutSession (e2e)', () => {
       .expect(200);
 
     expect(response.body.exercisesPerformed[0].sets).toHaveLength(3);
+    expect(response.body.exercisesPerformed[0].sets[2].reps).toBe(6);
+    expect(response.body.exercisesPerformed[0].sets[2].weight).toBe(120);
+    expect(response.body.exercisesPerformed[0].sets[2].order).toBe(2);
   });
 
   it('5. Complete the workout session', async () => {
@@ -119,11 +122,18 @@ describe('WorkoutSession (e2e)', () => {
     expect(response.body.completed).toBe(true);
     expect(response.body.exercisesPerformed).toHaveLength(1);
     expect(response.body.exercisesPerformed[0].sets).toHaveLength(3);
+
+    // The order should now be consistent
     expect(response.body.exercisesPerformed[0].sets[0].reps).toBe(10);
     expect(response.body.exercisesPerformed[0].sets[0].weight).toBe(100);
+    expect(response.body.exercisesPerformed[0].sets[0].order).toBe(0);
+
     expect(response.body.exercisesPerformed[0].sets[1].reps).toBe(8);
     expect(response.body.exercisesPerformed[0].sets[1].weight).toBe(110);
+    expect(response.body.exercisesPerformed[0].sets[1].order).toBe(1);
+
     expect(response.body.exercisesPerformed[0].sets[2].reps).toBe(6);
     expect(response.body.exercisesPerformed[0].sets[2].weight).toBe(120);
+    expect(response.body.exercisesPerformed[0].sets[2].order).toBe(2);
   });
 });
