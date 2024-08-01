@@ -49,6 +49,7 @@ describe('WorkoutSessionsController', () => {
         userId: 'user-id',
         workoutPlanId: 'workout-plan-id',
         notes: 'Session notes',
+        date: new Date().toISOString(),
         exercisesPerformed: [],
       };
       const createdWorkoutSession: WorkoutSession = {
@@ -58,6 +59,8 @@ describe('WorkoutSessionsController', () => {
         workoutPlan: null,
         date: new Date(),
         exercisesPerformed: [],
+        completed: false,
+        workoutPlanId: 'workout-plan-id',
       };
 
       jest.spyOn(service, 'create').mockResolvedValue(createdWorkoutSession);
@@ -81,6 +84,7 @@ describe('WorkoutSessionsController', () => {
           workoutPlan: null,
           date: new Date(),
           exercisesPerformed: [],
+          completed: false,
         },
       ];
       jest.spyOn(service, 'findAll').mockResolvedValue(workoutSessions);
@@ -100,6 +104,7 @@ describe('WorkoutSessionsController', () => {
         workoutPlan: null,
         date: new Date(),
         exercisesPerformed: [],
+        completed: false,
       };
       jest.spyOn(service, 'findOne').mockResolvedValue(workoutSession);
 
@@ -124,6 +129,7 @@ describe('WorkoutSessionsController', () => {
         notes: 'Updated session notes',
       };
       const updatedWorkoutSession: WorkoutSession = {
+        completed: false,
         id: '1',
         userId: 'user-id',
         workoutPlanId: 'workout-plan-id',
