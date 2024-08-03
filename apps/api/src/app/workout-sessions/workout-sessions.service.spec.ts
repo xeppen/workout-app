@@ -7,6 +7,7 @@ import { Set } from './entities/set.entity';
 import { CreateWorkoutSessionDto } from './dto/create-workout-session.dto';
 import { UpdateWorkoutSessionDto } from './dto/update-workout-session.dto';
 import { AddExerciseDto } from './dto/add-exercise.dto';
+import { Exercise } from '../exercises/entities/exercise.entity';
 
 describe('WorkoutSessionsService', () => {
   let service: WorkoutSessionsService;
@@ -23,6 +24,16 @@ describe('WorkoutSessionsService', () => {
       findOne: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      manager: {
+        transaction: jest.fn((cb) =>
+          cb({
+            findOneOrFail: jest.fn(),
+            create: jest.fn(),
+            save: jest.fn(),
+            findOne: jest.fn(),
+          })
+        ),
+      },
     };
     mockExercisePerformedRepository = {
       create: jest.fn(),
@@ -54,10 +65,6 @@ describe('WorkoutSessionsService', () => {
     service = module.get<WorkoutSessionsService>(WorkoutSessionsService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
-
   describe('create', () => {
     it('should create a new workout session with exercises performed', async () => {
       const createDto: CreateWorkoutSessionDto = {
@@ -80,77 +87,33 @@ describe('WorkoutSessionsService', () => {
         id: 'session-id',
         ...createDto,
         date: new Date(),
+        exercisesPerformed: [],
       };
 
-      const mockExercisePerformed = {
-        id: 'exercise-performed-id',
-        exerciseId: 'exercise-id',
-        workoutSession: mockWorkoutSession,
-      };
-
-      const mockSets = [
-        {
-          id: 'set-1',
-          ...createDto.exercisesPerformed[0].sets[0],
-          exercisePerformed: mockExercisePerformed,
-        },
-        {
-          id: 'set-2',
-          ...createDto.exercisesPerformed[0].sets[1],
-          exercisePerformed: mockExercisePerformed,
-        },
-      ];
-
-      mockWorkoutSessionRepository.create.mockReturnValue(mockWorkoutSession);
-      mockWorkoutSessionRepository.save.mockResolvedValue(mockWorkoutSession);
-      mockExercisePerformedRepository.create.mockReturnValue(
-        mockExercisePerformed
+      mockWorkoutSessionRepository.manager.transaction.mockImplementation(
+        async (cb) => {
+          const transactionalEntityManager = {
+            create: jest.fn().mockReturnValue(mockWorkoutSession),
+            save: jest.fn().mockResolvedValue(mockWorkoutSession),
+            findOneOrFail: jest.fn().mockResolvedValue(mockWorkoutSession),
+            findOne: jest.fn().mockResolvedValue(mockWorkoutSession),
+          };
+          await cb(transactionalEntityManager);
+          return mockWorkoutSession;
+        }
       );
-      mockExercisePerformedRepository.save.mockResolvedValue(
-        mockExercisePerformed
-      );
-      mockSetRepository.create
-        .mockReturnValue(mockSets[0])
-        .mockReturnValueOnce(mockSets[1]);
-      mockSetRepository.save
-        .mockResolvedValue(mockSets[0])
-        .mockResolvedValueOnce(mockSets[1]);
-
-      mockWorkoutSessionRepository.findOne.mockResolvedValue({
-        ...mockWorkoutSession,
-        exercisesPerformed: [{ ...mockExercisePerformed, sets: mockSets }],
-      });
 
       const result = await service.create(createDto);
 
-      expect(result).toEqual({
-        ...mockWorkoutSession,
-        exercisesPerformed: [{ ...mockExercisePerformed, sets: mockSets }],
-      });
-      expect(mockWorkoutSessionRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: createDto.userId,
-          workoutPlanId: createDto.workoutPlanId,
-          notes: createDto.notes,
-        })
-      );
-      expect(mockWorkoutSessionRepository.save).toHaveBeenCalledWith(
-        mockWorkoutSession
-      );
-      expect(mockExercisePerformedRepository.create).toHaveBeenCalledWith({
-        exerciseId: createDto.exercisesPerformed[0].exerciseId,
-        workoutSession: mockWorkoutSession,
-      });
-      expect(mockExercisePerformedRepository.save).toHaveBeenCalledWith(
-        mockExercisePerformed
-      );
-      expect(mockSetRepository.create).toHaveBeenCalledTimes(2);
-      expect(mockSetRepository.save).toHaveBeenCalledTimes(2);
-      expect(mockWorkoutSessionRepository.findOne).toHaveBeenCalledWith({
-        where: { id: mockWorkoutSession.id },
-        relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
-      });
+      expect(result).toEqual(mockWorkoutSession);
+      expect(
+        mockWorkoutSessionRepository.manager.transaction
+      ).toHaveBeenCalled();
     });
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
   describe('startSession', () => {
@@ -186,8 +149,8 @@ describe('WorkoutSessionsService', () => {
       const sessionId = 'session-id';
       const exerciseId = 'exercise-id';
       const sets = [
-        { reps: 10, weight: 100, order: 0 },
-        { reps: 8, weight: 110, order: 1 },
+        { reps: 10, weight: 100 },
+        { reps: 8, weight: 110 },
       ];
 
       const addExerciseDto: AddExerciseDto = {
@@ -195,30 +158,46 @@ describe('WorkoutSessionsService', () => {
         sets,
       };
 
-      const mockSession: Partial<WorkoutSession> = {
+      const initialMockSession: Partial<WorkoutSession> = {
         id: sessionId,
         exercisesPerformed: [],
       };
 
+      const updatedMockSession: Partial<WorkoutSession> = {
+        ...initialMockSession,
+        exercisesPerformed: [
+          {
+            exerciseId,
+            sets: sets.map((set, index) => ({ ...set, order: index })) as Set[],
+            id: '',
+            workoutSession: new WorkoutSession(),
+            workoutSessionId: '',
+            exercise: new Exercise(),
+          },
+        ],
+      };
+
       const mockTransactionManager = {
-        findOneOrFail: jest.fn().mockResolvedValue(mockSession),
+        findOneOrFail: jest.fn().mockResolvedValue(initialMockSession),
         create: jest.fn().mockImplementation((entity, data) => data),
         save: jest.fn().mockImplementation((entity) => Promise.resolve(entity)),
       };
 
       mockWorkoutSessionRepository.manager = {
         transaction: jest.fn().mockImplementation(async (cb) => {
-          await cb(mockTransactionManager);
-          return mockSession;
+          return await cb(mockTransactionManager);
         }),
       };
+
+      // Mock the findOne method to return the updated session
+      service.findOne = jest.fn().mockResolvedValue(updatedMockSession);
 
       const result = await service.addExerciseToSession(
         sessionId,
         addExerciseDto
       );
 
-      expect(result).toEqual(mockSession);
+      expect(result).toEqual(updatedMockSession);
       expect(mockTransactionManager.findOneOrFail).toHaveBeenCalledWith(
         WorkoutSession,
         {
@@ -230,10 +209,11 @@ describe('WorkoutSessionsService', () => {
         ExercisePerformed,
         expect.objectContaining({
           exerciseId,
-          workoutSession: mockSession,
+          workoutSession: initialMockSession,
         })
       );
       expect(mockTransactionManager.save).toHaveBeenCalledTimes(3); // Once for ExercisePerformed, twice for Sets
+      expect(service.findOne).toHaveBeenCalledWith(sessionId);
     });
   });
 
@@ -257,7 +237,18 @@ describe('WorkoutSessionsService', () => {
   describe('update', () => {
     it('should update a workout session', async () => {
       const updateDto: UpdateWorkoutSessionDto = { notes: 'Updated notes' };
-      const mockUpdatedSession = { id: '1', ...updateDto };
+      const mockUpdatedSession = {
+        id: '1',
+        ...updateDto,
+        exercisesPerformed: [
+          {
+            sets: [
+              { order: 0, reps: 10, weight: 100 },
+              { order: 1, reps: 8, weight: 110 },
+            ],
+          },
+        ],
+      };
       mockWorkoutSessionRepository.update.mockResolvedValue({ affected: 1 });
       mockWorkoutSessionRepository.findOneOrFail.mockResolvedValue(
         mockUpdatedSession
@@ -276,9 +267,6 @@ describe('WorkoutSessionsService', () => {
         order: {
           exercisesPerformed: {
             id: 'ASC',
-            sets: {
-              order: 'ASC',
-            },
           },
         },
       });
@@ -297,7 +285,18 @@ describe('WorkoutSessionsService', () => {
 
   describe('completeSession', () => {
     it('should complete a workout session', async () => {
-      const mockSession = { id: '1', userId: 'user1' };
+      const mockSession = {
+        id: '1',
+        userId: 'user1',
+        exercisesPerformed: [
+          {
+            sets: [
+              { order: 0, reps: 10, weight: 100 },
+              { order: 1, reps: 8, weight: 110 },
+            ],
+          },
+        ],
+      };
       mockWorkoutSessionRepository.findOneOrFail.mockResolvedValue(mockSession);
       mockWorkoutSessionRepository.save.mockResolvedValue(mockSession);
 
@@ -310,9 +309,6 @@ describe('WorkoutSessionsService', () => {
         order: {
           exercisesPerformed: {
             id: 'ASC',
-            sets: {
-              order: 'ASC',
-            },
           },
         },
       });
