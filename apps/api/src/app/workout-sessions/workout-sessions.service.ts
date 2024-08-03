@@ -30,36 +30,61 @@ export class WorkoutSessionsService {
       sessionData.date = new Date().toDateString();
     }
 
-    const workoutSession = this.workoutSessionRepository.create(sessionData);
-    await this.workoutSessionRepository.save(workoutSession);
+    return this.workoutSessionRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        const workoutSession = transactionalEntityManager.create(
+          WorkoutSession,
+          sessionData
+        );
+        await transactionalEntityManager.save(workoutSession);
 
-    if (exercisesPerformed && exercisesPerformed.length > 0) {
-      for (const exercisePerformedData of exercisesPerformed) {
-        const exercisePerformed = this.exercisePerformedRepository.create({
-          exerciseId: exercisePerformedData.exerciseId,
-          workoutSession,
-        });
-        await this.exercisePerformedRepository.save(exercisePerformed);
+        if (exercisesPerformed && exercisesPerformed.length > 0) {
+          for (const exercisePerformedData of exercisesPerformed) {
+            const exercisePerformed = transactionalEntityManager.create(
+              ExercisePerformed,
+              {
+                exerciseId: exercisePerformedData.exerciseId,
+                workoutSession,
+              }
+            );
+            await transactionalEntityManager.save(exercisePerformed);
 
-        if (
-          exercisePerformedData.sets &&
-          exercisePerformedData.sets.length > 0
-        ) {
-          for (const setData of exercisePerformedData.sets) {
-            const set = this.setRepository.create({
-              ...setData,
-              exercisePerformed,
-            });
-            await this.setRepository.save(set);
+            if (
+              exercisePerformedData.sets &&
+              exercisePerformedData.sets.length > 0
+            ) {
+              for (let i = 0; i < exercisePerformedData.sets.length; i++) {
+                const setData = exercisePerformedData.sets[i];
+                const set = transactionalEntityManager.create(Set, {
+                  ...setData,
+                  exercisePerformed,
+                  order: i, // Set the order explicitly
+                });
+                await transactionalEntityManager.save(set);
+              }
+            }
           }
         }
-      }
-    }
 
-    return this.workoutSessionRepository.findOne({
-      where: { id: workoutSession.id },
-      relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
-    });
+        const savedSession = await transactionalEntityManager.findOne(
+          WorkoutSession,
+          {
+            where: { id: workoutSession.id },
+            relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
+            order: {
+              exercisesPerformed: {
+                id: 'ASC',
+                sets: {
+                  order: 'ASC',
+                },
+              },
+            },
+          }
+        );
+
+        return savedSession;
+      }
+    );
   }
 
   async findAll(): Promise<WorkoutSession[]> {
@@ -69,18 +94,22 @@ export class WorkoutSessionsService {
   }
 
   async findOne(id: string): Promise<WorkoutSession> {
-    return await this.workoutSessionRepository.findOneOrFail({
+    const workoutSession = await this.workoutSessionRepository.findOneOrFail({
       where: { id },
       relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
       order: {
         exercisesPerformed: {
           id: 'ASC',
-          sets: {
-            order: 'ASC', // Order by the new 'order' field
-          },
         },
       },
     });
+
+    // Sort the sets for each exercisePerformed
+    workoutSession.exercisesPerformed.forEach((exercise) => {
+      exercise.sets.sort((a, b) => a.order - b.order);
+    });
+
+    return workoutSession;
   }
 
   async update(

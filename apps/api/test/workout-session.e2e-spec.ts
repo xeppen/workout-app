@@ -117,8 +117,6 @@ describe('WorkoutSession (e2e)', () => {
       .get(`/workout-sessions/${workoutSessionId}`)
       .expect(200);
 
-    console.log(JSON.stringify(response.body, null, 2));
-
     expect(response.body.completed).toBe(true);
     expect(response.body.exercisesPerformed).toHaveLength(1);
     expect(response.body.exercisesPerformed[0].sets).toHaveLength(3);
