@@ -71,4 +71,31 @@ export class WorkoutPlansController {
     this.logger.log(`Removing workout plan with id: ${id}`);
     return this.workoutPlansService.remove(id);
   }
+
+  @Post(':id/sessions')
+  async createSession(@Param('id') id: string, @Body('userId') userId: string) {
+    this.logger.log(`Creating session for workout plan with id: ${id}`);
+    return this.workoutPlansService.createSession(id, userId);
+  }
+
+  @Post(':id/progress')
+  async progressPlan(
+    @Param('id') id: string,
+    @Body() progressDto: ProgressWorkoutPlanDto
+  ) {
+    this.logger.log(`Progressing workout plan with id: ${id}`);
+    return this.workoutPlansService.progressPlan(id, progressDto);
+  }
+
+  @Post(':id/clone')
+  async clonePlan(@Param('id') id: string, @Body('name') name: string) {
+    this.logger.log(`Cloning workout plan with id: ${id}`);
+    return this.workoutPlansService.clonePlan(id, name);
+  }
+
+  @Get(':id/statistics')
+  async getStatistics(@Param('id') id: string) {
+    this.logger.log(`Getting statistics for workout plan with id: ${id}`);
+    return this.workoutPlansService.getStatistics(id);
+  }
 }

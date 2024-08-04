@@ -4,6 +4,9 @@ import {
   IsArray,
   ValidateNested,
   IsUUID,
+  IsNumber,
+  IsOptional,
+  IsPositive,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ExerciseInPlanDto } from './execise-in-plan.dto';
@@ -25,4 +28,19 @@ export class CreateWorkoutPlanDto {
   @ValidateNested({ each: true })
   @Type(() => ExerciseInPlanDto)
   exercises: ExerciseInPlanDto[];
+}
+
+export class ProgressWorkoutPlanDto {
+  @IsString()
+  @IsOptional()
+  progressionType?: 'linear' | 'percentage';
+
+  @IsNumber()
+  @IsPositive()
+  incrementWeight: number;
+
+  @IsNumber()
+  @IsPositive()
+  @IsOptional()
+  incrementPercentage?: number;
 }
