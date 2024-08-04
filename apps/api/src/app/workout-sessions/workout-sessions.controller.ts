@@ -12,7 +12,7 @@ import { WorkoutSessionsService } from './workout-sessions.service';
 import { CreateWorkoutSessionDto } from './dto/create-workout-session.dto';
 import { UpdateWorkoutSessionDto } from './dto/update-workout-session.dto';
 import { AddExerciseDto } from './dto/add-exercise.dto';
-import { AddSetDto } from './dto/add-set.dto';
+import { AddSetDto, UpdateSetDto } from './dto/add-set.dto';
 
 @Controller('workout-sessions')
 export class WorkoutSessionsController {
@@ -68,6 +68,41 @@ export class WorkoutSessionsController {
       id,
       exerciseId,
       addSetDto
+    );
+  }
+
+  @Patch(':id/exercises/:exerciseId/sets/:setId')
+  updateSet(
+    @Param('id') id: string,
+    @Param('exerciseId') exerciseId: string,
+    @Param('setId') setId: string,
+    @Body() updateSetDto: UpdateSetDto
+  ) {
+    return this.workoutSessionsService.updateSet(
+      id,
+      exerciseId,
+      setId,
+      updateSetDto
+    );
+  }
+
+  @Delete(':id/exercises/:exerciseId/sets/:setId')
+  removeSet(
+    @Param('id') id: string,
+    @Param('exerciseId') exerciseId: string,
+    @Param('setId') setId: string
+  ) {
+    return this.workoutSessionsService.removeSet(id, exerciseId, setId);
+  }
+
+  @Delete(':id/exercises/:exerciseId')
+  removeExerciseFromSession(
+    @Param('id') id: string,
+    @Param('exerciseId') exerciseId: string
+  ) {
+    return this.workoutSessionsService.removeExerciseFromSession(
+      id,
+      exerciseId
     );
   }
 }

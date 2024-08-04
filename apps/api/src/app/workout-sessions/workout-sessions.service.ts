@@ -6,7 +6,7 @@ import { ExercisePerformed } from './entities/exercise-performed.entity';
 import { Set } from './entities/set.entity';
 import { CreateWorkoutSessionDto } from './dto/create-workout-session.dto';
 import { UpdateWorkoutSessionDto } from './dto/update-workout-session.dto';
-import { AddSetDto, SetDto } from './dto/add-set.dto';
+import { AddSetDto, UpdateSetDto } from './dto/add-set.dto';
 import { AddExerciseDto } from './dto/add-exercise.dto';
 
 @Injectable()
@@ -174,6 +174,52 @@ export class WorkoutSessionsService {
     );
   }
 
+  async removeExerciseFromSession(
+    sessionId: string,
+    exerciseId: string
+  ): Promise<WorkoutSession> {
+    return this.workoutSessionRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        const session = await transactionalEntityManager.findOne(
+          WorkoutSession,
+          {
+            where: { id: sessionId },
+            relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
+          }
+        );
+
+        if (!session) {
+          throw new NotFoundException('Workout session not found');
+        }
+
+        const exercisePerformedIndex = session.exercisesPerformed.findIndex(
+          (ep) => ep.exerciseId === exerciseId
+        );
+
+        if (exercisePerformedIndex === -1) {
+          throw new NotFoundException('Exercise not found in session');
+        }
+
+        const exercisePerformed =
+          session.exercisesPerformed[exercisePerformedIndex];
+
+        // Remove all sets associated with this exercise
+        await transactionalEntityManager.remove(exercisePerformed.sets);
+
+        // Remove the exercisePerformed entity
+        await transactionalEntityManager.remove(exercisePerformed);
+
+        // Remove the exercise from the session's exercisesPerformed array
+        session.exercisesPerformed.splice(exercisePerformedIndex, 1);
+
+        // Save the updated session
+        await transactionalEntityManager.save(session);
+
+        return session;
+      }
+    );
+  }
+
   async addSetToExercise(
     sessionId: string,
     exerciseId: string,
@@ -205,5 +251,63 @@ export class WorkoutSessionsService {
     // If you want to add a completedAt field, you'll need to add it to the entity first
     // session.completedAt = new Date();
     return await this.workoutSessionRepository.save(session);
+  }
+
+  async updateSet(
+    sessionId: string,
+    exerciseId: string,
+    setId: string,
+    updateSetDto: UpdateSetDto
+  ): Promise<WorkoutSession> {
+    const session = await this.findOne(sessionId);
+    const exercisePerformed = session.exercisesPerformed.find(
+      (ep) => ep.exerciseId === exerciseId
+    );
+
+    if (!exercisePerformed) {
+      throw new NotFoundException('Exercise not found in session');
+    }
+
+    const set = exercisePerformed.sets.find((s) => s.id === setId);
+
+    if (!set) {
+      throw new NotFoundException('Set not found in exercise');
+    }
+
+    await this.setRepository.update(setId, updateSetDto);
+
+    return this.findOne(sessionId);
+  }
+
+  async removeSet(
+    sessionId: string,
+    exerciseId: string,
+    setId: string
+  ): Promise<WorkoutSession> {
+    const session = await this.findOne(sessionId);
+    const exercisePerformed = session.exercisesPerformed.find(
+      (ep) => ep.exerciseId === exerciseId
+    );
+
+    if (!exercisePerformed) {
+      throw new NotFoundException('Exercise not found in session');
+    }
+
+    const setIndex = exercisePerformed.sets.findIndex((s) => s.id === setId);
+
+    if (setIndex === -1) {
+      throw new NotFoundException('Set not found in exercise');
+    }
+
+    await this.setRepository.delete(setId);
+
+    // Update the order of remaining sets
+    for (let i = setIndex; i < exercisePerformed.sets.length; i++) {
+      await this.setRepository.update(exercisePerformed.sets[i].id, {
+        order: i,
+      });
+    }
+
+    return this.findOne(sessionId);
   }
 }
