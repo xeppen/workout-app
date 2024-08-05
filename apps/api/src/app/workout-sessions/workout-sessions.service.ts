@@ -96,22 +96,26 @@ export class WorkoutSessionsService {
   }
 
   async findOne(id: string): Promise<WorkoutSession> {
-    const workoutSession = await this.workoutSessionRepository.findOneOrFail({
-      where: { id },
-      relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
-      order: {
-        exercisesPerformed: {
-          order: 'ASC',
+    try {
+      const workoutSession = await this.workoutSessionRepository.findOneOrFail({
+        where: { id },
+        relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
+        order: {
+          exercisesPerformed: {
+            order: 'ASC',
+          },
         },
-      },
-    });
+      });
 
-    // Sort the sets for each exercisePerformed
-    workoutSession.exercisesPerformed.forEach((exercise) => {
-      exercise.sets.sort((a, b) => a.order - b.order);
-    });
+      // Sort the sets for each exercisePerformed
+      workoutSession.exercisesPerformed.forEach((exercise) => {
+        exercise.sets.sort((a, b) => a.order - b.order);
+      });
 
-    return workoutSession;
+      return workoutSession;
+    } catch (error) {
+      throw new NotFoundException(`Workout session with ID "${id}" not found`);
+    }
   }
 
   async update(
