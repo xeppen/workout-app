@@ -56,6 +56,10 @@ export class CreateExercisePerformedDto {
   @ValidateNested({ each: true })
   @Type(() => CreateSetDto)
   sets: CreateSetDto[];
+
+  @IsNumber()
+  @IsOptional()
+  order?: number;
 }
 
 export class CreateWorkoutSessionDto {

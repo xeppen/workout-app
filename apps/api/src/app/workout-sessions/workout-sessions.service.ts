@@ -39,12 +39,14 @@ export class WorkoutSessionsService {
         await transactionalEntityManager.save(workoutSession);
 
         if (exercisesPerformed && exercisesPerformed.length > 0) {
-          for (const exercisePerformedData of exercisesPerformed) {
+          for (let i = 0; i < exercisesPerformed.length; i++) {
+            const exercisePerformedData = exercisesPerformed[i];
             const exercisePerformed = transactionalEntityManager.create(
               ExercisePerformed,
               {
                 exerciseId: exercisePerformedData.exerciseId,
                 workoutSession,
+                order: i, // Set the order for ExercisePerformed
               }
             );
             await transactionalEntityManager.save(exercisePerformed);
@@ -53,12 +55,12 @@ export class WorkoutSessionsService {
               exercisePerformedData.sets &&
               exercisePerformedData.sets.length > 0
             ) {
-              for (let i = 0; i < exercisePerformedData.sets.length; i++) {
-                const setData = exercisePerformedData.sets[i];
+              for (let j = 0; j < exercisePerformedData.sets.length; j++) {
+                const setData = exercisePerformedData.sets[j];
                 const set = transactionalEntityManager.create(Set, {
                   ...setData,
                   exercisePerformed,
-                  order: i, // Set the order explicitly
+                  order: j, // Set the order explicitly
                 });
                 await transactionalEntityManager.save(set);
               }
@@ -73,7 +75,7 @@ export class WorkoutSessionsService {
             relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
             order: {
               exercisesPerformed: {
-                id: 'ASC',
+                order: 'ASC', // Changed from id to order
                 sets: {
                   order: 'ASC',
                 },
@@ -99,7 +101,7 @@ export class WorkoutSessionsService {
       relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
       order: {
         exercisesPerformed: {
-          id: 'ASC',
+          order: 'ASC',
         },
       },
     });
@@ -155,6 +157,7 @@ export class WorkoutSessionsService {
           {
             exerciseId: addExerciseDto.exerciseId,
             workoutSession: session,
+            order: session.exercisesPerformed.length,
           }
         );
 

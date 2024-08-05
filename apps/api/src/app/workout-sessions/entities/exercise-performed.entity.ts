@@ -31,4 +31,7 @@ export class ExercisePerformed {
 
   @OneToMany(() => Set, (set) => set.exercisePerformed, { cascade: true })
   sets: Set[];
+
+  @Column()
+  order: number;
 }
