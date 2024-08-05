@@ -24,4 +24,8 @@ export class ExerciseInPlan {
 
   @Column()
   restTime: number;
+  category: string;
+  maxWeight: any;
+  maxReps: any;
+  weight: number;
 }

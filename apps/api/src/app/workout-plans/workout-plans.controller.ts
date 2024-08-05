@@ -8,9 +8,13 @@ import {
   Delete,
   NotFoundException,
   Logger,
+  HttpCode,
 } from '@nestjs/common';
 import { WorkoutPlansService } from './workout-plans.service';
-import { CreateWorkoutPlanDto } from './dto/create-workout-plan.dto';
+import {
+  CreateWorkoutPlanDto,
+  ProgressWorkoutPlanDto,
+} from './dto/create-workout-plan.dto';
 import { UpdateWorkoutPlanDto } from './dto/update-workout-plan.dto';
 
 @Controller('workout-plans')
@@ -78,13 +82,10 @@ export class WorkoutPlansController {
     return this.workoutPlansService.createSession(id, userId);
   }
 
-  @Post(':id/progress')
-  async progressPlan(
-    @Param('id') id: string,
-    @Body() progressDto: ProgressWorkoutPlanDto
-  ) {
-    this.logger.log(`Progressing workout plan with id: ${id}`);
-    return this.workoutPlansService.progressPlan(id, progressDto);
+  @Post('progress-compound-lifts')
+  @HttpCode(200)
+  async progressCompoundLifts(@Body() progressDto: ProgressWorkoutPlanDto) {
+    return this.workoutPlansService.progressCompoundLifts(progressDto);
   }
 
   @Post(':id/clone')

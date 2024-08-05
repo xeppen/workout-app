@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkoutPlan } from './entities/workout-plan.entity';
@@ -28,22 +33,30 @@ export class WorkoutPlansService {
 
   async create(
     createWorkoutPlanDto: CreateWorkoutPlanDto
-  ): Promise<Partial<WorkoutPlan>> {
+  ): Promise<WorkoutPlan> {
+    this.logger.debug(
+      `Creating workout plan: ${JSON.stringify(createWorkoutPlanDto)}`
+    );
+
     const { exercises, ...workoutPlanData } = createWorkoutPlanDto;
 
     const workoutPlan = this.workoutPlanRepository.create(workoutPlanData);
     const savedWorkoutPlan = await this.workoutPlanRepository.save(workoutPlan);
 
-    const exercisesInPlan = exercises.map((exercise) =>
-      this.exerciseInPlanRepository.create({
-        ...exercise,
-        workoutPlan: savedWorkoutPlan,
-      })
-    );
+    if (exercises && exercises.length > 0) {
+      const exercisesInPlan = exercises.map((exercise) =>
+        this.exerciseInPlanRepository.create({
+          ...exercise,
+          workoutPlan: savedWorkoutPlan,
+        })
+      );
 
-    await this.exerciseInPlanRepository.save(exercisesInPlan);
+      await this.exerciseInPlanRepository.save(exercisesInPlan);
+      savedWorkoutPlan.exercises = exercisesInPlan;
+    }
 
-    return this.findOne(savedWorkoutPlan.id);
+    this.logger.debug(`Created workout plan with id: ${savedWorkoutPlan.id}`);
+    return savedWorkoutPlan;
   }
 
   async findAll(): Promise<WorkoutPlan[]> {
@@ -141,7 +154,36 @@ export class WorkoutPlansService {
   }
 
   async remove(id: string): Promise<void> {
-    await this.workoutPlanRepository.delete(id);
+    const workoutPlan = await this.workoutPlanRepository.findOne({
+      where: { id },
+      relations: ['exercises', 'workoutSessions'],
+    });
+
+    if (!workoutPlan) {
+      throw new NotFoundException(`Workout plan with ID "${id}" not found`);
+    }
+
+    try {
+      // Remove associated exercises
+      if (workoutPlan.exercises) {
+        await this.workoutPlanRepository.manager.remove(workoutPlan.exercises);
+      }
+
+      // You might want to handle workout sessions differently
+      // For example, you might want to keep them but set workoutPlanId to null
+      if (workoutPlan.workoutSessions) {
+        for (const session of workoutPlan.workoutSessions) {
+          session.workoutPlanId = null;
+          await this.workoutPlanRepository.manager.save(session);
+        }
+      }
+
+      // Finally, remove the workout plan
+      await this.workoutPlanRepository.remove(workoutPlan);
+    } catch (error) {
+      console.error('Error deleting workout plan:', error);
+      throw new InternalServerErrorException('Could not delete workout plan');
+    }
   }
 
   async createSession(
@@ -179,21 +221,48 @@ export class WorkoutPlansService {
     });
   }
 
-  async progressPlan(
-    id: string,
+  async progressCompoundLifts(
     progressDto: ProgressWorkoutPlanDto
   ): Promise<WorkoutPlan> {
-    const workoutPlan = await this.findOne(id);
+    const workoutPlan = await this.findOne(
+      progressDto.workoutPlanId.toString()
+    );
     if (!workoutPlan) {
-      throw new NotFoundException(`Workout plan with ID "${id}" not found`);
+      throw new NotFoundException(`Workout plan not found`);
     }
 
-    // Since ExerciseInPlan doesn't have a weight property, we'll need to adjust how we progress the plan
-    // For this example, we'll increase the number of reps
-    workoutPlan.exercises = workoutPlan.exercises.map((exercise) => ({
-      ...exercise,
-      reps: exercise.reps + progressDto.incrementReps,
-    }));
+    // Update max weights and reps for compound lifts
+    for (const [category, progress] of Object.entries(
+      progressDto.compoundLiftsProgress
+    )) {
+      const exercise = workoutPlan.exercises.find(
+        (e) => e.category === category
+      );
+      if (exercise) {
+        exercise.maxWeight = progress.maxWeight;
+        exercise.maxReps = progress.maxReps;
+      }
+    }
+
+    // If completing the current cycle, calculate new weights for the next cycle
+    if (progressDto.completeCurrentCycle) {
+      workoutPlan.exercises = workoutPlan.exercises.map((exercise) => {
+        switch (exercise.category) {
+          case 'press':
+          case 'bench_press':
+            exercise.weight += 2.5;
+            break;
+          case 'squat':
+          case 'deadlift':
+            exercise.weight += 5;
+            break;
+          default:
+            // For other exercises, you could implement a custom progression rule
+            break;
+        }
+        return exercise;
+      });
+    }
 
     return this.workoutPlanRepository.save(workoutPlan);
   }
@@ -262,17 +331,24 @@ export class WorkoutPlansService {
       });
     });
 
+    let totalCompletionRate = 0;
+    let exerciseCount = 0;
+
+    for (const stat of Object.values(exerciseStats)) {
+      const plannedTotalSets = (stat as any).plannedSets * totalSessions;
+      if (plannedTotalSets > 0) {
+        totalCompletionRate += (stat as any).totalSets / plannedTotalSets;
+        exerciseCount++;
+      }
+    }
+
     const averageCompletionRate =
-      Object.values(exerciseStats).reduce(
-        (sum: number, stat: any) =>
-          sum + stat.totalSets / (stat.plannedSets * totalSessions),
-        0
-      ) / Object.keys(exerciseStats).length;
+      exerciseCount > 0 ? totalCompletionRate / exerciseCount : 0;
 
     const mostPerformedExercise = Object.entries(exerciseStats).reduce(
-      (max, [exerciseId, stat]: [string, any]) =>
-        stat.totalSets > max.totalSets
-          ? { exerciseId, totalSets: stat.totalSets }
+      (max, [exerciseId, stat]) =>
+        (stat as any).totalSets > max.totalSets
+          ? { exerciseId, totalSets: (stat as any).totalSets }
           : max,
       { exerciseId: null, totalSets: 0 }
     ).exerciseId;

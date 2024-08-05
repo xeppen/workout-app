@@ -112,9 +112,18 @@ describe('WorkoutSession (e2e)', () => {
       })
       .expect(200);
 
+    const exercisePerformed1 = response2.body.exercisesPerformed.find(
+      (ep) => ep.exerciseId === exerciseId1
+    );
+    const exercisePerformed2 = response2.body.exercisesPerformed.find(
+      (ep) => ep.exerciseId === exerciseId2
+    );
+
     expect(response2.body.exercisesPerformed).toHaveLength(2);
-    expect(response2.body.exercisesPerformed[1].exerciseId).toBe(exerciseId2);
-    expect(response2.body.exercisesPerformed[1].sets).toHaveLength(2);
+    expect(exercisePerformed1).toBeDefined();
+    expect(exercisePerformed2).toBeDefined();
+    expect(exercisePerformed1.sets).toHaveLength(2);
+    expect(exercisePerformed2.sets).toHaveLength(2);
   });
 
   it('4. Add another set to the exercise', async () => {
@@ -125,12 +134,15 @@ describe('WorkoutSession (e2e)', () => {
       .send({ reps: 6, weight: 120 })
       .expect(200);
 
-    expect(response.body.exercisesPerformed[0].sets).toHaveLength(3);
-    expect(response.body.exercisesPerformed[0].sets[2].reps).toBe(6);
-    expect(response.body.exercisesPerformed[0].sets[2].weight).toBe(120);
-    expect(response.body.exercisesPerformed[0].sets[2].order).toBe(2);
+    const exercisePerformed = response.body.exercisesPerformed.find(
+      (ep) => ep.exerciseId === exerciseId1
+    );
+    expect(exercisePerformed.sets).toHaveLength(3);
+    expect(exercisePerformed.sets[2].reps).toBe(6);
+    expect(exercisePerformed.sets[2].weight).toBe(120);
+    expect(exercisePerformed.sets[2].order).toBe(2);
 
-    setId = response.body.exercisesPerformed[0].sets[2].id;
+    setId = exercisePerformed.sets[2].id;
     expect(setId).toBeDefined();
   });
 
@@ -143,8 +155,12 @@ describe('WorkoutSession (e2e)', () => {
       .send({ reps: 8 })
       .expect(200);
 
-    expect(response.body.exercisesPerformed[0].sets[2].reps).toBe(8);
-    expect(response.body.exercisesPerformed[0].sets[2].weight).toBe(120); // Weight should remain unchanged
+    let exercisePerformed = response.body.exercisesPerformed.find(
+      (ep) => ep.exerciseId === exerciseId1
+    );
+    let updatedSet = exercisePerformed.sets.find((s) => s.id === setId);
+    expect(updatedSet.reps).toBe(8);
+    expect(updatedSet.weight).toBe(120); // Weight should remain unchanged
 
     // Then, update only the weight
     response = await request(app.getHttpServer())
@@ -154,8 +170,12 @@ describe('WorkoutSession (e2e)', () => {
       .send({ weight: 130 })
       .expect(200);
 
-    expect(response.body.exercisesPerformed[0].sets[2].reps).toBe(8); // Reps should remain unchanged
-    expect(response.body.exercisesPerformed[0].sets[2].weight).toBe(130);
+    exercisePerformed = response.body.exercisesPerformed.find(
+      (ep) => ep.exerciseId === exerciseId1
+    );
+    updatedSet = exercisePerformed.sets.find((s) => s.id === setId);
+    expect(updatedSet.reps).toBe(8); // Reps should remain unchanged
+    expect(updatedSet.weight).toBe(130);
   });
 
   it('6. Remove an exercise from the session', async () => {

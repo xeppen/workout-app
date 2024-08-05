@@ -31,6 +31,12 @@ export class CreateWorkoutPlanDto {
 }
 
 export class ProgressWorkoutPlanDto {
+  workoutPlanId(workoutPlanId: any) {
+    throw new Error('Method not implemented.');
+  }
+  compoundLiftsProgress(compoundLiftsProgress: any) {
+    throw new Error('Method not implemented.');
+  }
   @IsString()
   @IsOptional()
   progressionType?: 'linear' | 'percentage';
@@ -43,4 +49,5 @@ export class ProgressWorkoutPlanDto {
   @IsPositive()
   @IsOptional()
   incrementPercentage?: number;
+  completeCurrentCycle: any;
 }
