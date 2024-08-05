@@ -167,11 +167,9 @@ describe('WorkoutSessionsService', () => {
         ...initialMockSession,
         exercisesPerformed: [
           {
-            exerciseId,
             sets: sets.map((set, index) => ({ ...set, order: index })) as Set[],
             id: '',
             workoutSession: new WorkoutSession(),
-            workoutSessionId: '',
             exercise: new Exercise(),
             order: 0,
           },

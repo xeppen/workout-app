@@ -25,8 +25,6 @@ describe('ExercisePerformed Entity', () => {
 
     // Check if properties exist
     expect(columnNames).toContain('id');
-    expect(columnNames).toContain('workoutSessionId');
-    expect(columnNames).toContain('exerciseId');
 
     // Check if relationships exist
     expect(relationNames).toContain('workoutSession');
@@ -36,12 +34,8 @@ describe('ExercisePerformed Entity', () => {
     // Check if properties can be set
     const exercisePerformed = new ExercisePerformed();
     exercisePerformed.id = '1';
-    exercisePerformed.workoutSessionId = 'workout-session-uuid';
-    exercisePerformed.exerciseId = 'exercise-uuid';
 
     expect(exercisePerformed.id).toBe('1');
-    expect(exercisePerformed.workoutSessionId).toBe('workout-session-uuid');
-    expect(exercisePerformed.exerciseId).toBe('exercise-uuid');
   });
 
   it('should have correct relationships', () => {

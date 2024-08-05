@@ -196,7 +196,7 @@ export class WorkoutSessionsService {
         }
 
         const exercisePerformedIndex = session.exercisesPerformed.findIndex(
-          (ep) => ep.exerciseId === exerciseId
+          (ep) => ep.exercise.id === exerciseId
         );
 
         if (exercisePerformedIndex === -1) {
@@ -229,9 +229,13 @@ export class WorkoutSessionsService {
     addSetDto: AddSetDto
   ): Promise<WorkoutSession> {
     const session = await this.findOne(sessionId);
-    const exercisePerformed = session.exercisesPerformed.find(
-      (ep) => ep.exerciseId === exerciseId
-    );
+    const exercisePerformed = await this.exercisePerformedRepository.findOne({
+      where: {
+        workoutSession: { id: sessionId },
+        exercise: { id: exerciseId },
+      },
+      relations: ['sets', 'workoutSession', 'exercise'],
+    });
 
     if (!exercisePerformed) {
       throw new NotFoundException('Exercise not found in session');
@@ -264,7 +268,7 @@ export class WorkoutSessionsService {
   ): Promise<WorkoutSession> {
     const session = await this.findOne(sessionId);
     const exercisePerformed = session.exercisesPerformed.find(
-      (ep) => ep.exerciseId === exerciseId
+      (ep) => ep.exercise.id === exerciseId
     );
 
     if (!exercisePerformed) {
@@ -289,7 +293,7 @@ export class WorkoutSessionsService {
   ): Promise<WorkoutSession> {
     const session = await this.findOne(sessionId);
     const exercisePerformed = session.exercisesPerformed.find(
-      (ep) => ep.exerciseId === exerciseId
+      (ep) => ep.exercise.id === exerciseId
     );
 
     if (!exercisePerformed) {
