@@ -72,7 +72,52 @@ describe('WorkoutSessionsService', () => {
     expect(service).toBeDefined();
   });
 
-  // Existing tests...
+  describe('create', () => {
+    it('should create a new workout session with exercises performed', async () => {
+      const createDto: CreateWorkoutSessionDto = {
+        userId: 'user-id',
+        workoutPlanId: 'plan-id',
+        notes: 'Test session',
+        date: new Date().toISOString(),
+        exercisesPerformed: [
+          {
+            exerciseId: 'exercise-id',
+            sets: [
+              { reps: 10, weight: 100, order: 0 },
+              { reps: 8, weight: 110, order: 1 },
+            ],
+          },
+        ],
+      };
+
+      const mockWorkoutSession = {
+        id: 'session-id',
+        ...createDto,
+        date: new Date(),
+        exercisesPerformed: [],
+      };
+
+      mockWorkoutSessionRepository.manager.transaction.mockImplementation(
+        async (cb) => {
+          const transactionalEntityManager = {
+            create: jest.fn().mockReturnValue(mockWorkoutSession),
+            save: jest.fn().mockResolvedValue(mockWorkoutSession),
+            findOneOrFail: jest.fn().mockResolvedValue(mockWorkoutSession),
+            findOne: jest.fn().mockResolvedValue(mockWorkoutSession),
+          };
+          await cb(transactionalEntityManager);
+          return mockWorkoutSession;
+        }
+      );
+
+      const result = await service.create(createDto);
+
+      expect(result).toEqual(mockWorkoutSession);
+      expect(
+        mockWorkoutSessionRepository.manager.transaction
+      ).toHaveBeenCalled();
+    });
+  });
 
   describe('findOne', () => {
     it('should return a workout session by id', async () => {
