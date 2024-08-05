@@ -103,7 +103,13 @@ describe('Realistic WorkoutSession (e2e)', () => {
   });
 
   it('4. Add Bench Press exercise with multiple sets', async () => {
-    const sets = Array(5).fill({ reps: 10, weight: 165 });
+    const sets = [
+      { reps: 6, weight: 140 },
+      { reps: 7, weight: 145 },
+      { reps: 8, weight: 150 },
+      { reps: 9, weight: 155 },
+      { reps: 10, weight: 160 },
+    ];
 
     const response = await request(app.getHttpServer())
       .post(`/workout-sessions/${workoutSessionId}/exercises`)
@@ -112,6 +118,13 @@ describe('Realistic WorkoutSession (e2e)', () => {
         sets,
       })
       .expect(200);
+    const exercisePerformed = response.body.exercisesPerformed.find(
+      (ep) => ep.exerciseId === exercises['Bench Press']
+    );
+    expect(exercisePerformed.sets).toHaveLength(5);
+    expect(exercisePerformed.sets[2].reps).toBe(8);
+    expect(exercisePerformed.sets[2].weight).toBe(150);
+    expect(exercisePerformed.sets[2].order).toBe(2);
 
     expect(response.body.exercisesPerformed).toHaveLength(2);
     expect(response.body.exercisesPerformed[1].exerciseId).toBe(
@@ -121,7 +134,11 @@ describe('Realistic WorkoutSession (e2e)', () => {
   });
 
   it('5. Add Chin-ups exercise with multiple sets', async () => {
-    const sets = Array(5).fill({ reps: 10, weight: 0 }); // Assuming bodyweight for chin-ups
+    const sets = [
+      { reps: 12, weight: 0 },
+      { reps: 12, weight: 0 },
+      { reps: 10, weight: 0 },
+    ];
 
     const response = await request(app.getHttpServer())
       .post(`/workout-sessions/${workoutSessionId}/exercises`)
@@ -130,12 +147,14 @@ describe('Realistic WorkoutSession (e2e)', () => {
         sets,
       })
       .expect(200);
-
-    expect(response.body.exercisesPerformed).toHaveLength(3);
-    expect(response.body.exercisesPerformed[2].exerciseId).toBe(
-      exercises['Chin-ups']
+    const exercisePerformed = response.body.exercisesPerformed.find(
+      (ep) => ep.exerciseId === exercises['Chin-ups']
     );
-    expect(response.body.exercisesPerformed[2].sets).toHaveLength(sets.length);
+    expect(exercisePerformed.sets).toHaveLength(3);
+    expect(exercisePerformed.sets[1].reps).toBe(12);
+    expect(exercisePerformed.sets[1].weight).toBe(0);
+    expect(exercisePerformed.sets[1].order).toBe(1);
+    expect(exercisePerformed.exerciseId).toBe(exercises['Chin-ups']);
   });
 
   it('6. Add notes to the workout session', async () => {
@@ -175,12 +194,12 @@ describe('Realistic WorkoutSession (e2e)', () => {
 
     // Verify Bench Press
     expect(response.body.exercisesPerformed[1].sets).toHaveLength(5);
-    expect(response.body.exercisesPerformed[1].sets[0].reps).toBe(10);
-    expect(response.body.exercisesPerformed[1].sets[0].weight).toBe(165);
+    expect(response.body.exercisesPerformed[1].sets[0].reps).toBe(6);
+    expect(response.body.exercisesPerformed[1].sets[3].weight).toBe(155);
 
     // Verify Chin-ups
-    expect(response.body.exercisesPerformed[2].sets).toHaveLength(5);
-    expect(response.body.exercisesPerformed[2].sets[0].reps).toBe(10);
+    expect(response.body.exercisesPerformed[2].sets).toHaveLength(3);
+    expect(response.body.exercisesPerformed[2].sets[0].reps).toBe(12);
     expect(response.body.exercisesPerformed[2].sets[0].weight).toBe(0);
   });
 });
