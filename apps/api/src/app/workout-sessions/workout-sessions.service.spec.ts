@@ -173,6 +173,7 @@ describe('WorkoutSessionsService', () => {
             workoutSession: new WorkoutSession(),
             workoutSessionId: '',
             exercise: new Exercise(),
+            order: 0,
           },
         ],
       };
@@ -266,7 +267,7 @@ describe('WorkoutSessionsService', () => {
         relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
         order: {
           exercisesPerformed: {
-            id: 'ASC',
+            order: 'ASC',
           },
         },
       });
@@ -308,7 +309,7 @@ describe('WorkoutSessionsService', () => {
         relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
         order: {
           exercisesPerformed: {
-            id: 'ASC',
+            order: 'ASC',
           },
         },
       });
