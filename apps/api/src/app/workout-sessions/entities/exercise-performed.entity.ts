@@ -16,18 +16,11 @@ export class ExercisePerformed {
   id: string;
 
   @ManyToOne(() => WorkoutSession, (session) => session.exercisesPerformed)
-  @JoinColumn({ name: 'workoutSessionId' })
   workoutSession: WorkoutSession;
 
-  @Column()
-  workoutSessionId: string;
-
-  @ManyToOne(() => Exercise, (exercise) => exercise.exercisesPerformed)
-  @JoinColumn({ name: 'exerciseId' })
+  @ManyToOne(() => Exercise)
+  @JoinColumn()
   exercise: Exercise;
-
-  @Column()
-  exerciseId: string;
 
   @OneToMany(() => Set, (set) => set.exercisePerformed, { cascade: true })
   sets: Set[];
