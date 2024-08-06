@@ -17,6 +17,21 @@ describe('WorkoutSessionsService', () => {
   let mockExercisePerformedRepository: any;
   let mockSetRepository: any;
 
+  const createMockWorkoutSession = (
+    partial: Partial<WorkoutSession> = {}
+  ): WorkoutSession => ({
+    id: 'test-id',
+    userId: 'test-user-id',
+    workoutPlanId: 'test-plan-id',
+    date: new Date(),
+    notes: '',
+    completed: false,
+    exercisesPerformed: [],
+    user: null,
+    workoutPlan: null,
+    ...partial,
+  });
+
   beforeEach(async () => {
     mockWorkoutSessionRepository = {
       create: jest.fn(),
@@ -312,6 +327,124 @@ describe('WorkoutSessionsService', () => {
     });
   });
 
+  describe('findAll', () => {
+    it('should return an array of workout sessions', async () => {
+      const mockSessions = [{ id: '1' }, { id: '2' }];
+      mockWorkoutSessionRepository.find.mockResolvedValue(mockSessions);
+
+      const result = await service.findAll();
+
+      expect(result).toEqual(mockSessions);
+      expect(mockWorkoutSessionRepository.find).toHaveBeenCalledWith({
+        relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
+      });
+    });
+  });
+
+  describe('update', () => {
+    it('should update a workout session', async () => {
+      const updateDto: UpdateWorkoutSessionDto = { notes: 'Updated notes' };
+      const mockUpdatedSession = { id: '1', ...updateDto };
+
+      mockWorkoutSessionRepository.update.mockResolvedValue({ affected: 1 });
+      jest
+        .spyOn(service, 'findOne')
+        .mockResolvedValue(mockUpdatedSession as unknown as WorkoutSession);
+
+      const result = await service.update('1', updateDto);
+
+      expect(result).toEqual(mockUpdatedSession);
+      expect(mockWorkoutSessionRepository.update).toHaveBeenCalledWith(
+        '1',
+        updateDto
+      );
+      expect(service.findOne).toHaveBeenCalledWith('1');
+    });
+  });
+
+  describe('remove', () => {
+    it('should remove a workout session', async () => {
+      mockWorkoutSessionRepository.delete.mockResolvedValue({ affected: 1 });
+
+      await service.remove('1');
+
+      expect(mockWorkoutSessionRepository.delete).toHaveBeenCalledWith('1');
+    });
+  });
+
+  describe('startSession', () => {
+    it('should start a new workout session', async () => {
+      const mockSession = {
+        id: '1',
+        userId: 'user1',
+        workoutPlanId: 'plan1',
+        date: new Date(),
+      };
+      mockWorkoutSessionRepository.create.mockReturnValue(mockSession);
+      mockWorkoutSessionRepository.save.mockResolvedValue(mockSession);
+
+      const result = await service.startSession('user1', 'plan1');
+
+      expect(result).toEqual(mockSession);
+      expect(mockWorkoutSessionRepository.create).toHaveBeenCalledWith({
+        userId: 'user1',
+        workoutPlanId: 'plan1',
+        date: expect.any(Date),
+      });
+      expect(mockWorkoutSessionRepository.save).toHaveBeenCalledWith(
+        mockSession
+      );
+    });
+  });
+
+  describe('addExerciseToSession', () => {
+    it('should add an exercise to the session', async () => {
+      const addExerciseDto: AddExerciseDto = {
+        exerciseId: 'exercise1',
+        sets: [{ reps: 10, weight: 100 }],
+      };
+      const mockSession = {
+        id: '1',
+        exercisesPerformed: [],
+      };
+      const mockUpdatedSession = {
+        ...mockSession,
+        exercisesPerformed: [
+          {
+            id: 'ep1',
+            exerciseId: 'exercise1',
+            sets: [{ reps: 10, weight: 100 }],
+          },
+        ],
+      };
+
+      mockWorkoutSessionRepository.manager.transaction.mockImplementation(
+        async (cb) => {
+          const transactionalEntityManager = {
+            findOneOrFail: jest.fn().mockResolvedValue(mockSession),
+            create: jest.fn().mockImplementation((entity, data) => data),
+            save: jest
+              .fn()
+              .mockImplementation((entity) => Promise.resolve(entity)),
+          };
+          return await cb(transactionalEntityManager);
+        }
+      );
+
+      jest
+        .spyOn(service, 'findOne')
+        .mockResolvedValue(mockUpdatedSession as unknown as WorkoutSession);
+
+      const result = await service.addExerciseToSession('1', addExerciseDto);
+
+      expect(result).toEqual(mockUpdatedSession);
+      expect(
+        mockWorkoutSessionRepository.manager.transaction
+      ).toHaveBeenCalled();
+      expect(service.findOne).toHaveBeenCalledWith('1');
+    });
+  });
+
   describe('removeExerciseFromSession', () => {
     it('should remove an exercise from the workout session', async () => {
       const mockSession = {
@@ -369,6 +502,21 @@ describe('WorkoutSessionsService', () => {
 
       await expect(
         service.removeExerciseFromSession('1', 'exercise-1')
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when session is not found', async () => {
+      mockWorkoutSessionRepository.manager.transaction.mockImplementation(
+        async (cb) => {
+          const transactionalEntityManager = {
+            findOne: jest.fn().mockResolvedValue(null),
+          };
+          return await cb(transactionalEntityManager);
+        }
+      );
+
+      await expect(
+        service.removeExerciseFromSession('1', 'exercise1')
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -560,6 +708,26 @@ describe('WorkoutSessionsService', () => {
       await expect(
         service.removeSet('1', 'exercise-1', 'set-1')
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('completeSession', () => {
+    it('should complete a workout session', async () => {
+      const mockSession = { id: '1', completed: false };
+      const mockCompletedSession = { ...mockSession, completed: true };
+
+      jest
+        .spyOn(service, 'findOne')
+        .mockResolvedValue(mockSession as WorkoutSession);
+      mockWorkoutSessionRepository.save.mockResolvedValue(mockCompletedSession);
+
+      const result = await service.completeSession('1');
+
+      expect(result).toEqual(mockCompletedSession);
+      expect(service.findOne).toHaveBeenCalledWith('1');
+      expect(mockWorkoutSessionRepository.save).toHaveBeenCalledWith(
+        mockSession
+      );
     });
   });
 });
