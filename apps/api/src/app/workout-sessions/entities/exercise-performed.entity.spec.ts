@@ -28,7 +28,6 @@ describe('ExercisePerformed Entity', () => {
 
     // Check if relationships exist
     expect(relationNames).toContain('workoutSession');
-    expect(relationNames).toContain('exercise');
     expect(relationNames).toContain('sets');
 
     // Check if properties can be set
@@ -45,11 +44,11 @@ describe('ExercisePerformed Entity', () => {
     const set = new Set();
 
     exercisePerformed.workoutSession = workoutSession;
-    exercisePerformed.exercise = exercise;
+    exercisePerformed.exerciseId = exercise.id;
     exercisePerformed.sets = [set];
 
     expect(exercisePerformed.workoutSession).toBe(workoutSession);
-    expect(exercisePerformed.exercise).toBe(exercise);
+    expect(exercisePerformed.exerciseId).toBe(exercise.id);
     expect(exercisePerformed.sets).toContain(set);
   });
 });

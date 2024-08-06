@@ -96,7 +96,6 @@ describe('WorkoutSession (e2e)', () => {
         ],
       })
       .expect(200);
-
     expect(response1.body.exercisesPerformed).toHaveLength(1);
     expect(response1.body.exercisesPerformed[0].exerciseId).toBe(exerciseId1);
     expect(response1.body.exercisesPerformed[0].sets).toHaveLength(2);

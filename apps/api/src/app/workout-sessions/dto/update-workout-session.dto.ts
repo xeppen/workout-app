@@ -1,6 +1,15 @@
 // update-workout-session.dto.ts
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
 import { SetDto } from './add-set.dto';
+import { Type } from 'class-transformer';
 
 export class UpdateWorkoutSessionDto {
   @IsOptional()
@@ -16,7 +25,12 @@ export class UpdateWorkoutSessionDto {
 }
 
 export class ExercisePerformedDto {
-  id?: string;
+  @IsUUID()
   exerciseId: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @ArrayMinSize(1)
+  @Type(() => SetDto)
   sets: SetDto[];
 }

@@ -32,7 +32,7 @@ export class Exercise {
 
   @OneToMany(
     () => ExercisePerformed,
-    (exercisePerformed) => exercisePerformed.exercise,
+    (exercisePerformed) => exercisePerformed.exerciseId,
     { cascade: true }
   )
   exercisesPerformed: ExercisePerformed[];
