@@ -117,6 +117,161 @@ describe('WorkoutSessionsService', () => {
         mockWorkoutSessionRepository.manager.transaction
       ).toHaveBeenCalled();
     });
+
+    it('should create a new workout session with no exercises', async () => {
+      const createDto: CreateWorkoutSessionDto = {
+        userId: 'user-id',
+        workoutPlanId: 'plan-id',
+        notes: 'Test session',
+        date: '',
+        exercisesPerformed: [],
+      };
+
+      const mockWorkoutSession = {
+        id: 'session-id',
+        ...createDto,
+        date: expect.any(String),
+        exercisesPerformed: [],
+      };
+
+      mockWorkoutSessionRepository.manager.transaction.mockImplementation(
+        async (cb) => {
+          const transactionalEntityManager = {
+            create: jest.fn().mockReturnValue(mockWorkoutSession),
+            save: jest.fn().mockResolvedValue(mockWorkoutSession),
+            findOne: jest.fn().mockResolvedValue(mockWorkoutSession),
+          };
+          return await cb(transactionalEntityManager);
+        }
+      );
+
+      const result = await service.create(createDto);
+
+      expect(result).toEqual(mockWorkoutSession);
+      expect(result.date).toBeDefined();
+      expect(
+        mockWorkoutSessionRepository.manager.transaction
+      ).toHaveBeenCalled();
+    });
+
+    it('should create a new workout session with exercises but no sets', async () => {
+      const createDto: CreateWorkoutSessionDto = {
+        userId: 'user-id',
+        workoutPlanId: 'plan-id',
+        notes: 'Test session',
+        date: '2023-05-01',
+        exercisesPerformed: [
+          {
+            exerciseId: 'exercise-1',
+            sets: [],
+          },
+          {
+            exerciseId: 'exercise-2',
+            sets: [],
+          },
+        ],
+      };
+
+      const mockWorkoutSession = {
+        id: 'session-id',
+        ...createDto,
+        exercisesPerformed: [
+          { id: 'ep-1', exerciseId: 'exercise-1', order: 0, sets: [] },
+          { id: 'ep-2', exerciseId: 'exercise-2', order: 1, sets: [] },
+        ],
+      };
+
+      mockWorkoutSessionRepository.manager.transaction.mockImplementation(
+        async (cb) => {
+          const transactionalEntityManager = {
+            create: jest.fn().mockImplementation((entity, data) => {
+              if (entity === WorkoutSession) return mockWorkoutSession;
+              if (entity === ExercisePerformed) return data;
+            }),
+            save: jest
+              .fn()
+              .mockImplementation((entity) => Promise.resolve(entity)),
+            findOne: jest.fn().mockResolvedValue(mockWorkoutSession),
+          };
+          return await cb(transactionalEntityManager);
+        }
+      );
+
+      const result = await service.create(createDto);
+
+      expect(result).toEqual(mockWorkoutSession);
+      expect(result.exercisesPerformed).toHaveLength(2);
+      expect(result.exercisesPerformed[0].sets).toHaveLength(0);
+      expect(result.exercisesPerformed[1].sets).toHaveLength(0);
+    });
+
+    it('should create a new workout session with exercises and sets', async () => {
+      const createDto: CreateWorkoutSessionDto = {
+        userId: 'user-id',
+        workoutPlanId: 'plan-id',
+        notes: 'Test session',
+        date: '2023-05-01',
+        exercisesPerformed: [
+          {
+            exerciseId: 'exercise-1',
+            sets: [
+              {
+                reps: 10,
+                weight: 100,
+                order: 0,
+              },
+              {
+                reps: 8,
+                weight: 110,
+                order: 1,
+              },
+            ],
+          },
+        ],
+      };
+
+      const mockWorkoutSession = {
+        id: 'session-id',
+        ...createDto,
+        exercisesPerformed: [
+          {
+            id: 'ep-1',
+            exerciseId: 'exercise-1',
+            order: 0,
+            sets: [
+              { id: 'set-1', reps: 10, weight: 100, order: 0 },
+              { id: 'set-2', reps: 8, weight: 110, order: 1 },
+            ],
+          },
+        ],
+      };
+
+      mockWorkoutSessionRepository.manager.transaction.mockImplementation(
+        async (cb) => {
+          const transactionalEntityManager = {
+            create: jest.fn().mockImplementation((entity, data) => {
+              if (entity === WorkoutSession) return mockWorkoutSession;
+              if (entity === ExercisePerformed) return { id: 'ep-1', ...data };
+              if (entity === Set)
+                return { id: `set-${data.order + 1}`, ...data };
+            }),
+            save: jest
+              .fn()
+              .mockImplementation((entity) => Promise.resolve(entity)),
+            findOne: jest.fn().mockResolvedValue(mockWorkoutSession),
+          };
+          return await cb(transactionalEntityManager);
+        }
+      );
+
+      const result = await service.create(createDto);
+
+      expect(result).toEqual(mockWorkoutSession);
+      expect(result.exercisesPerformed).toHaveLength(1);
+      expect(result.exercisesPerformed[0].sets).toHaveLength(2);
+      expect(result.exercisesPerformed[0].sets[0].order).toBe(0);
+      expect(result.exercisesPerformed[0].sets[1].order).toBe(1);
+    });
   });
 
   describe('findOne', () => {
