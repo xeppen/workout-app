@@ -10,6 +10,8 @@ import { AddExerciseDto } from './dto/add-exercise.dto';
 import { AddSetDto, UpdateSetDto } from './dto/add-set.dto';
 import { NotFoundException } from '@nestjs/common';
 import { Exercise } from '../exercises/entities/exercise.entity';
+import { User } from '../users/entities/user.entity';
+import { WorkoutPlan } from '../workout-plans/entities/workout-plan.entity';
 
 describe('WorkoutSessionsService', () => {
   let service: WorkoutSessionsService;
@@ -449,13 +451,27 @@ describe('WorkoutSessionsService', () => {
     it('should remove an exercise from the workout session', async () => {
       const mockSession = {
         id: '1',
+        userId: 'user-1',
+        date: new Date(),
+        notes: '',
+        completed: false,
         exercisesPerformed: [
           {
-            exercise: { id: 'exercise-1' },
-            sets: [{ id: 'set-1' }, { id: 'set-2' }],
+            id: 'ep1',
+            exerciseId: 'exercise-1',
+            sets: [{ id: 'set1' }, { id: 'set2' }],
           },
-          { exercise: { id: 'exercise-2' }, sets: [{ id: 'set-3' }] },
+          {
+            id: 'ep2',
+            exerciseId: 'exercise-2',
+            sets: [{ id: 'set3' }],
+          },
         ],
+      };
+
+      const updatedMockSession = {
+        ...mockSession,
+        exercisesPerformed: [mockSession.exercisesPerformed[1]],
       };
 
       mockWorkoutSessionRepository.manager.transaction.mockImplementation(
@@ -463,18 +479,24 @@ describe('WorkoutSessionsService', () => {
           const transactionalEntityManager = {
             findOne: jest.fn().mockResolvedValue(mockSession),
             remove: jest.fn(),
-            save: jest.fn().mockResolvedValue(mockSession),
+            save: jest.fn(),
           };
           return await cb(transactionalEntityManager);
         }
       );
 
+      jest
+        .spyOn(service, 'findOne')
+        .mockResolvedValue(updatedMockSession as unknown as WorkoutSession);
+
       const result = await service.removeExerciseFromSession('1', 'exercise-1');
 
-      expect(result).toEqual(mockSession);
+      expect(result).toEqual(updatedMockSession);
       expect(
         mockWorkoutSessionRepository.manager.transaction
       ).toHaveBeenCalled();
+      expect(service.findOne).toHaveBeenCalledTimes(1);
+      expect(service.findOne).toHaveBeenCalledWith('1');
     });
 
     it('should throw NotFoundException if workout session is not found', async () => {
@@ -527,7 +549,7 @@ describe('WorkoutSessionsService', () => {
         id: '1',
         exercisesPerformed: [
           {
-            exercise: { id: 'exercise-1' },
+            exerciseId: 'exercise-1',
             sets: [{ order: 0 }, { order: 1 }],
           },
         ],
@@ -539,7 +561,7 @@ describe('WorkoutSessionsService', () => {
 
       jest
         .spyOn(service, 'findOne')
-        .mockResolvedValue(mockSession as WorkoutSession);
+        .mockResolvedValue(mockSession as unknown as WorkoutSession);
       mockExercisePerformedRepository.findOne.mockResolvedValue(
         mockExercisePerformed
       );
@@ -558,8 +580,8 @@ describe('WorkoutSessionsService', () => {
 
       expect(result).toEqual(mockSession);
       expect(mockExercisePerformedRepository.findOne).toHaveBeenCalledWith({
-        where: { workoutSession: { id: '1' }, exercise: { id: 'exercise-1' } },
-        relations: ['sets', 'workoutSession', 'exercise'],
+        where: { workoutSession: { id: '1' }, exerciseId: 'exercise-1' },
+        relations: ['sets', 'workoutSession'],
       });
       expect(mockSetRepository.create).toHaveBeenCalledWith({
         ...addSetDto,
@@ -588,7 +610,7 @@ describe('WorkoutSessionsService', () => {
         id: '1',
         exercisesPerformed: [
           {
-            exercise: { id: 'exercise-1' },
+            exerciseId: 'exercise-1',
             sets: [{ id: 'set-1', reps: 10, weight: 100 }],
           },
         ],
@@ -650,7 +672,7 @@ describe('WorkoutSessionsService', () => {
         id: '1',
         exercisesPerformed: [
           {
-            exercise: { id: 'exercise-1' },
+            exerciseId: 'exercise-1',
             sets: [
               { id: 'set-1', order: 0 },
               { id: 'set-2', order: 1 },
@@ -660,22 +682,49 @@ describe('WorkoutSessionsService', () => {
         ],
       };
 
+      const updatedMockSession = {
+        ...mockSession,
+        exercisesPerformed: [
+          {
+            ...mockSession.exercisesPerformed[0],
+            sets: [
+              { id: 'set-1', order: 0 },
+              { id: 'set-3', order: 1 },
+            ],
+          },
+        ],
+      };
+
       jest
         .spyOn(service, 'findOne')
-        .mockResolvedValue(mockSession as WorkoutSession);
+        .mockResolvedValue(mockSession as unknown as WorkoutSession);
       mockSetRepository.delete.mockResolvedValue({ affected: 1 });
       mockSetRepository.update.mockResolvedValue({ affected: 1 });
+      mockWorkoutSessionRepository.save.mockResolvedValue(
+        updatedMockSession as WorkoutSession
+      );
 
       const result = await service.removeSet('1', 'exercise-1', 'set-2');
 
-      expect(result).toEqual(mockSession);
+      expect(result).toEqual(updatedMockSession);
       expect(mockSetRepository.delete).toHaveBeenCalledWith('set-2');
-      expect(mockSetRepository.update).toHaveBeenCalledTimes(2);
-      expect(mockSetRepository.update).toHaveBeenNthCalledWith(1, 'set-2', {
+      expect(mockSetRepository.update).toHaveBeenCalledTimes(1);
+      expect(mockSetRepository.update).toHaveBeenCalledWith('set-3', {
         order: 1,
       });
-      expect(mockSetRepository.update).toHaveBeenNthCalledWith(2, 'set-3', {
-        order: 2,
+      expect(service.findOne).toHaveBeenCalledTimes(1);
+      expect(service.findOne).toHaveBeenCalledWith('1');
+      expect(mockWorkoutSessionRepository.save).toHaveBeenCalledWith({
+        ...mockSession,
+        exercisesPerformed: [
+          {
+            ...mockSession.exercisesPerformed[0],
+            sets: [
+              { id: 'set-1', order: 0 },
+              { id: 'set-3', order: 1 },
+            ],
+          },
+        ],
       });
     });
 

@@ -8,6 +8,7 @@ import { CreateWorkoutSessionDto } from './dto/create-workout-session.dto';
 import { UpdateWorkoutSessionDto } from './dto/update-workout-session.dto';
 import { AddSetDto, UpdateSetDto } from './dto/add-set.dto';
 import { AddExerciseDto } from './dto/add-exercise.dto';
+import { Exercise } from '../exercises/entities/exercise.entity';
 
 @Injectable()
 export class WorkoutSessionsService {
@@ -156,10 +157,16 @@ export class WorkoutSessionsService {
           }
         );
 
+        const exercise: Exercise =
+          await transactionalEntityManager.findOneOrFail(Exercise, {
+            where: { id: addExerciseDto.exerciseId },
+          });
+        console.log('exercise', exercise);
+
         const exercisePerformed = transactionalEntityManager.create(
           ExercisePerformed,
           {
-            exerciseId: addExerciseDto.exerciseId,
+            exerciseId: exercise.id,
             workoutSession: session,
             order: session.exercisesPerformed.length,
           }
@@ -169,13 +176,13 @@ export class WorkoutSessionsService {
 
         for (const [index, setData] of addExerciseDto.sets.entries()) {
           const set = transactionalEntityManager.create(Set, {
-            ...setData,
+            reps: setData.reps,
+            weight: setData.weight,
             exercisePerformed,
             order: index,
           });
           await transactionalEntityManager.save(set);
         }
-
         return this.findOne(sessionId);
       }
     );
@@ -200,7 +207,7 @@ export class WorkoutSessionsService {
         }
 
         const exercisePerformedIndex = session.exercisesPerformed.findIndex(
-          (ep) => ep.exercise.id === exerciseId
+          (ep) => ep.exerciseId === exerciseId
         );
 
         if (exercisePerformedIndex === -1) {
@@ -222,7 +229,7 @@ export class WorkoutSessionsService {
         // Save the updated session
         await transactionalEntityManager.save(session);
 
-        return session;
+        return this.findOne(sessionId);
       }
     );
   }
@@ -232,20 +239,19 @@ export class WorkoutSessionsService {
     exerciseId: string,
     addSetDto: AddSetDto
   ): Promise<WorkoutSession> {
-    const session = await this.findOne(sessionId);
     const exercisePerformed = await this.exercisePerformedRepository.findOne({
       where: {
         workoutSession: { id: sessionId },
-        exercise: { id: exerciseId },
+        exerciseId: exerciseId,
       },
-      relations: ['sets', 'workoutSession', 'exercise'],
+      relations: ['sets', 'workoutSession'],
     });
 
     if (!exercisePerformed) {
       throw new NotFoundException('Exercise not found in session');
     }
 
-    const newOrder = exercisePerformed.sets.length; // Get the next order number
+    const newOrder = exercisePerformed.sets.length;
     const set = this.setRepository.create({
       ...addSetDto,
       exercisePerformed,
@@ -272,7 +278,7 @@ export class WorkoutSessionsService {
   ): Promise<WorkoutSession> {
     const session = await this.findOne(sessionId);
     const exercisePerformed = session.exercisesPerformed.find(
-      (ep) => ep.exercise.id === exerciseId
+      (ep) => ep.exerciseId === exerciseId
     );
 
     if (!exercisePerformed) {
@@ -297,7 +303,7 @@ export class WorkoutSessionsService {
   ): Promise<WorkoutSession> {
     const session = await this.findOne(sessionId);
     const exercisePerformed = session.exercisesPerformed.find(
-      (ep) => ep.exercise.id === exerciseId
+      (ep) => ep.exerciseId === exerciseId
     );
 
     if (!exercisePerformed) {
@@ -312,13 +318,17 @@ export class WorkoutSessionsService {
 
     await this.setRepository.delete(setId);
 
+    // Remove the set from the array
+    exercisePerformed.sets.splice(setIndex, 1);
+
     // Update the order of remaining sets
     for (let i = setIndex; i < exercisePerformed.sets.length; i++) {
+      exercisePerformed.sets[i].order = i;
       await this.setRepository.update(exercisePerformed.sets[i].id, {
         order: i,
       });
     }
 
-    return this.findOne(sessionId);
+    return this.workoutSessionRepository.save(session);
   }
 }
