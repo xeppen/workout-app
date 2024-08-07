@@ -18,3 +18,6 @@ export let supabase = null;
 if (process.env.NODE_ENV !== 'test') {
   supabase = getSupabaseClient();
 }
+
+// Add this line for testing purposes
+export const _createClient = createClient;
