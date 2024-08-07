@@ -7,21 +7,11 @@ jest.mock('@supabase/supabase-js', () => ({
 
 describe('Supabase Configuration', () => {
   const OLD_ENV = process.env;
-  let mockGetSupabaseClient;
-  let mockSupabase;
 
   beforeEach(() => {
     jest.resetModules();
     process.env = { ...OLD_ENV };
     jest.clearAllMocks();
-
-    mockGetSupabaseClient = jest.fn();
-    mockSupabase = null;
-
-    jest.mock('./supabase.config', () => ({
-      getSupabaseClient: mockGetSupabaseClient,
-      supabase: mockSupabase,
-    }));
   });
 
   afterEach(() => {
@@ -30,8 +20,6 @@ describe('Supabase Configuration', () => {
 
   it('should not create supabase client in test environment', () => {
     process.env.NODE_ENV = 'test';
-    mockGetSupabaseClient.mockReturnValue(null);
-
     const { getSupabaseClient, supabase } = require('./supabase.config');
     expect(getSupabaseClient()).toBeNull();
     expect(supabase).toBeNull();
@@ -43,12 +31,7 @@ describe('Supabase Configuration', () => {
     delete process.env.SUPABASE_URL;
     delete process.env.SUPABASE_KEY;
 
-    mockGetSupabaseClient.mockImplementation(() => {
-      throw new Error('SUPABASE_URL and SUPABASE_KEY must be set');
-    });
-
-    const { getSupabaseClient } = require('./supabase.config');
-    expect(() => getSupabaseClient()).toThrow(
+    expect(() => require('./supabase.config')).toThrow(
       'SUPABASE_URL and SUPABASE_KEY must be set'
     );
     expect(createClient).not.toHaveBeenCalled();
@@ -59,12 +42,13 @@ describe('Supabase Configuration', () => {
     process.env.SUPABASE_URL = 'https://xyzcompany.supabase.co';
     process.env.SUPABASE_KEY = 'public-anon-key';
 
-    mockGetSupabaseClient.mockReturnValue('mocked-client');
-
-    const { getSupabaseClient } = require('./supabase.config');
+    const { getSupabaseClient, _createClient } = require('./supabase.config');
     const supabase = getSupabaseClient();
 
-    expect(mockGetSupabaseClient).toHaveBeenCalled();
+    expect(_createClient).toHaveBeenCalledWith(
+      'https://xyzcompany.supabase.co',
+      'public-anon-key'
+    );
     expect(supabase).toBe('mocked-client');
   });
 
@@ -73,11 +57,10 @@ describe('Supabase Configuration', () => {
     process.env.SUPABASE_URL = 'https://xyzcompany.supabase.co';
     process.env.SUPABASE_KEY = 'public-anon-key';
 
-    mockSupabase = 'mocked-client';
-
-    const { supabase: supabase1 } = require('./supabase.config');
+    const { supabase: supabase1, _createClient } = require('./supabase.config');
     const { supabase: supabase2 } = require('./supabase.config');
 
+    expect(_createClient).toHaveBeenCalledTimes(1);
     expect(supabase1).toBe('mocked-client');
     expect(supabase1).toBe(supabase2);
   });
