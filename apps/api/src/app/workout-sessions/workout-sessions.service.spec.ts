@@ -652,7 +652,7 @@ describe('WorkoutSessionsService', () => {
         id: '1',
         exercisesPerformed: [
           {
-            exercise: { id: 'exercise-1' },
+            exerciseId: 'exercise-1',
             sets: [],
           },
         ],
@@ -662,7 +662,7 @@ describe('WorkoutSessionsService', () => {
 
       await expect(
         service.updateSet('1', 'exercise-1', 'set-1', { reps: 12, weight: 110 })
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(new NotFoundException('Set not found in exercise'));
     });
   });
 
@@ -746,7 +746,7 @@ describe('WorkoutSessionsService', () => {
         id: '1',
         exercisesPerformed: [
           {
-            exercise: { id: 'exercise-1' },
+            exerciseId: 'exercise-1',
             sets: [],
           },
         ],
@@ -756,7 +756,7 @@ describe('WorkoutSessionsService', () => {
 
       await expect(
         service.removeSet('1', 'exercise-1', 'set-1')
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(new NotFoundException('Set not found in exercise'));
     });
   });
 
