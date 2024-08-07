@@ -8,6 +8,7 @@ import {
   UpdateWorkoutSessionDto,
 } from './update-workout-session.dto';
 import { AddExerciseDto } from './add-exercise.dto';
+import { SetDto } from './add-set.dto';
 
 describe('CreateWorkoutSessionDto', () => {
   it('should validate successfully with valid data', async () => {
@@ -213,5 +214,22 @@ describe('ExercisePerformedDto', () => {
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors.some((error) => error.property === 'sets')).toBe(true);
+  });
+
+  it('should correctly transform plain object to ExercisePerformedDto instance', async () => {
+    const plainObject = {
+      exerciseId: '123e4567-e89b-12d3-a456-426614174000',
+      sets: [
+        {
+          reps: 10,
+          weight: 100,
+        },
+      ],
+    };
+
+    const dto = plainToInstance(ExercisePerformedDto, plainObject);
+
+    expect(dto).toBeInstanceOf(ExercisePerformedDto);
+    expect(dto.sets[0]).toBeInstanceOf(SetDto);
   });
 });
