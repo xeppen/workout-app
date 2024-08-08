@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
-import { PassportModule } from '@nestjs/passport';
-import { SupabaseStrategy } from './supabase.strategy';
+import { SupabaseModule } from './supabase.module';
+import { SupabaseAuthGuard } from './supabase-auth.guard';
+import { AuthController } from './auth.controller';
 
 @Module({
-  imports: [PassportModule],
-  providers: [SupabaseStrategy],
-  exports: [PassportModule],
+  imports: [SupabaseModule],
+  providers: [SupabaseAuthGuard],
+  controllers: [AuthController],
+  exports: [SupabaseAuthGuard],
 })
 export class AuthModule {}
