@@ -9,6 +9,7 @@ import { WorkoutSessionsModule } from './workout-sessions/workout-sessions.modul
 import { ProgressRecordsModule } from './progress-records/progress-records.module';
 import { ConfigModule } from '@nestjs/config';
 import { getTypeOrmConfig } from '../config/typeorm.config';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { getTypeOrmConfig } from '../config/typeorm.config';
     TypeOrmModule.forRootAsync({
       useFactory: getTypeOrmConfig,
     }),
+    AuthModule,
     ExercisesModule,
     UsersModule,
     WorkoutPlansModule,
