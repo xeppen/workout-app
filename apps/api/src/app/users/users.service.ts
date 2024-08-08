@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -17,13 +13,18 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
+    // Check if user already exists by Supabase ID
     const existingUser = await this.usersRepository.findOne({
-      where: { email: createUserDto.email },
+      where: { id: createUserDto.id },
     });
+
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      // If user exists, update their information
+      Object.assign(existingUser, createUserDto);
+      return await this.usersRepository.save(existingUser);
     }
 
+    // If user doesn't exist, create a new one
     const user = this.usersRepository.create(createUserDto);
     return await this.usersRepository.save(user);
   }
