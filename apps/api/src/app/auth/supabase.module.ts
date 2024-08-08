@@ -1,6 +1,6 @@
 // api/src/modules/supabase.module.ts
 import { Module } from '@nestjs/common';
-import { SupabaseService } from '../../service/subabase.service';
+import { SupabaseService } from './supabase.service';
 
 @Module({
   providers: [SupabaseService],

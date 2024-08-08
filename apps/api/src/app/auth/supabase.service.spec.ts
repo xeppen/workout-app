@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { SupabaseService } from './subabase.service';
-import { supabase } from '../config/supabase.config';
+import { SupabaseService } from './supabase.service';
+import { supabase } from '../../config/supabase.config';
 
 jest.mock('../config/supabase.config', () => ({
   supabase: {
