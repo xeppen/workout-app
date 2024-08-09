@@ -53,4 +53,23 @@ export class UsersService {
       throw new NotFoundException(`User with ID "${id}" not found`);
     }
   }
+
+  async findOrCreate(supabaseUser: any): Promise<User> {
+    let user = await this.usersRepository.findOne({
+      where: { id: supabaseUser.id },
+    });
+    if (!user) {
+      user = this.usersRepository.create({
+        id: supabaseUser.id,
+        email: supabaseUser.email,
+        // Add any other fields you want to store
+      });
+      await this.usersRepository.save(user);
+    }
+    return user;
+  }
+
+  async updateLastLogin(userId: string): Promise<void> {
+    await this.usersRepository.update(userId, { lastLoginAt: new Date() });
+  }
 }

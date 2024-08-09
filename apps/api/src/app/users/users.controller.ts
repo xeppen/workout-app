@@ -31,6 +31,7 @@ export class UsersController {
   }
 
   @Get('profile')
+  @UseGuards(SupabaseAuthGuard)
   getProfile(@Req() req) {
     return req.user;
   }

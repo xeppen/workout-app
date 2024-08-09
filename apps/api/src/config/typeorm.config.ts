@@ -38,7 +38,11 @@ export const getTypeOrmConfig = (): TypeOrmModuleOptions => {
     };
   }
 
-  if (process.env.USE_SUPABASE === 'true') {
+  if (
+    process.env.USE_SUPABASE === 'true' &&
+    process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV !== 'prod'
+  ) {
     if (!process.env.SUPABASE_DB_URL) {
       throw new Error('SUPABASE_DB_URL is not set');
     }
@@ -49,9 +53,11 @@ export const getTypeOrmConfig = (): TypeOrmModuleOptions => {
 
     return {
       type: 'postgres',
+      logging: true,
+      logger: 'advanced-console',
       url: process.env.SUPABASE_DB_URL,
       entities: entities,
-      synchronize: false, // Set to false for Supabase
+      synchronize: true, // Set to false for Supabase
       ssl: {
         rejectUnauthorized: false, // Required for Supabase connections
       },
