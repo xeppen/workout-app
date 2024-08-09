@@ -51,5 +51,9 @@ export class SupabaseService implements OnModuleInit {
     return response;
   }
 
-  // ... other methods
+  async getUserById(id: string) {
+    const { data, error } = await this.supabase.auth.admin.getUserById(id);
+    if (error) throw error;
+    return data.user;
+  }
 }
