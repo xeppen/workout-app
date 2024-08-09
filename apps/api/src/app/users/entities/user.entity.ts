@@ -25,4 +25,7 @@ export class User {
 
   @OneToMany(() => ProgressRecord, (progressRecord) => progressRecord.user)
   progressRecords: ProgressRecord[];
+
+  @Column({ nullable: true })
+  lastLoginAt: Date;
 }

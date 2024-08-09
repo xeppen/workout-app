@@ -7,14 +7,17 @@ import {
   Param,
   Delete,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
 import { WorkoutSessionsService } from './workout-sessions.service';
 import { CreateWorkoutSessionDto } from './dto/create-workout-session.dto';
 import { UpdateWorkoutSessionDto } from './dto/update-workout-session.dto';
 import { AddExerciseDto } from './dto/add-exercise.dto';
 import { AddSetDto, UpdateSetDto } from './dto/add-set.dto';
+import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 
 @Controller('workout-sessions')
+@UseGuards(SupabaseAuthGuard)
 export class WorkoutSessionsController {
   constructor(
     private readonly workoutSessionsService: WorkoutSessionsService

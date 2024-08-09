@@ -51,9 +51,28 @@ export class SupabaseService implements OnModuleInit {
     return response;
   }
 
+  async signUp(email: string, password: string): Promise<AuthResponse> {
+    console.log(`Attempting to sign up user: ${email}`);
+    const response = await this.getClient().auth.signUp({
+      email,
+      password,
+    });
+    console.log('Sign up response:', response);
+    return response;
+  }
+
+  async signInWithMagicLink(email: string): Promise<AuthResponse> {
+    console.log(`Sending magic link to: ${email}`);
+    return await this.getClient().auth.signInWithOtp({ email });
+  }
+
   async getUserById(id: string) {
     const { data, error } = await this.supabase.auth.admin.getUserById(id);
     if (error) throw error;
     return data.user;
+  }
+
+  async signOut(userId: string): Promise<{ error: Error | null }> {
+    return await this.getClient().auth.admin.signOut(userId);
   }
 }
