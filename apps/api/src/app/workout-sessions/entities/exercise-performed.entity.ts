@@ -5,11 +5,13 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { WorkoutSession } from '../../workout-sessions/entities/workout-session.entity';
 import { Set } from './set.entity';
 
-@Entity()
+@Entity('exercise_performed')
 export class ExercisePerformed {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -17,10 +19,14 @@ export class ExercisePerformed {
   @Column()
   exerciseId: string;
 
+  @Column({ name: 'workout_session_id' })
+  workoutSessionId: string;
+
   @ManyToOne(
     () => WorkoutSession,
     (workoutSession) => workoutSession.exercisesPerformed
   )
+  @JoinColumn({ name: 'workout_session_id' })
   workoutSession: WorkoutSession;
 
   @OneToMany(() => Set, (set) => set.exercisePerformed)
@@ -28,4 +34,10 @@ export class ExercisePerformed {
 
   @Column()
   order: number;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 }

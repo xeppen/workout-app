@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { ExercisePerformed } from './exercise-performed.entity';
 
-@Entity()
+@Entity('sets')
 export class Set {
   @PrimaryGeneratedColumn('uuid')
   id: string;
