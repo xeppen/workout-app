@@ -58,6 +58,6 @@ export class UsersController {
     if (id !== req.user.id) {
       throw new Error('You can only delete your own profile');
     }
-    return this.usersService.remove(id);
+    return this.usersService.remove(id, req);
   }
 }

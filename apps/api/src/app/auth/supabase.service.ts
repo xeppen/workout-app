@@ -75,4 +75,14 @@ export class SupabaseService implements OnModuleInit {
   async signOut(userId: string): Promise<{ error: Error | null }> {
     return await this.getClient().auth.admin.signOut(userId);
   }
+
+  async deleteUserFromAuth(userId: string) {
+    const { data, error } = await this.supabase.auth.admin.deleteUser(userId);
+    if (error) {
+      throw new Error(
+        `Failed to delete user from Supabase Auth: ${error.message}`
+      );
+    }
+    return data;
+  }
 }

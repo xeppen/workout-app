@@ -396,6 +396,17 @@
         }
       }
     },
+    "/api/workout-sessions/mine": {
+      "get": {
+        "operationId": "WorkoutSessionsController_findMySessions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/workout-sessions/{id}": {
       "get": {
         "operationId": "WorkoutSessionsController_findOne",

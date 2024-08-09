@@ -1,15 +1,25 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Delete,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  Param,
+  Req,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { SupabaseService } from '../auth/supabase.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private usersRepository: Repository<User>
+    private usersRepository: Repository<User>,
+    private supabaseService: SupabaseService
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -47,11 +57,30 @@ export class UsersService {
     return await this.usersRepository.save(user);
   }
 
-  async remove(id: string): Promise<void> {
+  @Delete(':id')
+  async remove(@Param('id') id: string, @Req() req) {
+    // Ensure that a user can only delete their own profile
+    if (id !== req.user.id) {
+      throw new HttpException(
+        'You can only delete your own profile',
+        HttpStatus.FORBIDDEN
+      );
+    }
+
+    // Delete from your local database
     const result = await this.usersRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`User with ID "${id}" not found`);
     }
+
+    // Delete from Supabase Authentication
+    try {
+      await this.supabaseService.deleteUserFromAuth(id);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    return { message: 'User deleted successfully' };
   }
 
   async findOrCreate(supabaseUser: any): Promise<User> {

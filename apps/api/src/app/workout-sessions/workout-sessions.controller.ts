@@ -8,6 +8,7 @@ import {
   Delete,
   HttpCode,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { WorkoutSessionsService } from './workout-sessions.service';
 import { CreateWorkoutSessionDto } from './dto/create-workout-session.dto';
@@ -31,6 +32,13 @@ export class WorkoutSessionsController {
   @Get()
   findAll() {
     return this.workoutSessionsService.findAll();
+  }
+
+  @Get('mine')
+  @UseGuards(SupabaseAuthGuard)
+  async findMySessions(@Req() req) {
+    const userId = req.user.id;
+    return this.workoutSessionsService.findByUserId(userId);
   }
 
   @Get(':id')

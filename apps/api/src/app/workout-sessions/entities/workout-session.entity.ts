@@ -18,7 +18,9 @@ export class WorkoutSession {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.workoutSessions)
+  @ManyToOne(() => User, (user) => user.workoutSessions, {
+    onDelete: 'CASCADE', // This line enables cascading deletes
+  })
   @JoinColumn({ name: 'user_id' })
   user: User;
 

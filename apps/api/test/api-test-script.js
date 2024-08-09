@@ -62,6 +62,7 @@ async function createWorkoutSession(accessToken, userId) {
       }
     );
     console.log('Workout session created successfully:', response.data);
+    return response.data.id;
   } catch (error) {
     console.error(
       'Error creating workout session:',
@@ -70,12 +71,80 @@ async function createWorkoutSession(accessToken, userId) {
   }
 }
 
+async function fetchAllWorkoutSessions(accessToken) {
+  try {
+    const response = await axios.get(`${BASE_URL}/workout-sessions`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    console.log('All workout sessions:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      'Error fetching all workout sessions:',
+      error.response?.data || error.message
+    );
+  }
+}
+
+async function fetchWorkoutSessionById(accessToken, sessionId) {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/workout-sessions/${sessionId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    console.log(`Workout session ${sessionId}:`, response.data);
+  } catch (error) {
+    console.error(
+      `Error fetching workout session by ID (${sessionId}):`,
+      error.response?.data || error.message
+    );
+  }
+}
+
+async function fetchMyWorkoutSessions(accessToken) {
+  try {
+    const response = await axios.get(`${BASE_URL}/workout-sessions/mine`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    console.log('My workout sessions:', response.data);
+  } catch (error) {
+    console.error(
+      'Error fetching my workout sessions:',
+      error.response?.data || error.message
+    );
+  }
+}
+
+async function deleteUser(accessToken, userId) {
+  try {
+    const response = await axios.delete(`${BASE_URL}/users/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    console.log('User deleted successfully:', response.data);
+  } catch (error) {
+    console.error(
+      'Error deleting user:',
+      error.response?.data || error.message
+    );
+  }
+}
+
 async function runTests() {
-  const email = 'xeppen@gmail.com';
+  const email = 'xeppen+test@gmail.com';
   const password = 'test123';
 
-  //   console.log('Step 1: Registering user...');
-  //   await registerUser(email, password);
+  console.log('Step 1: Registering user...');
+  await registerUser(email, password);
 
   console.log('Step 2: Logging in user...');
   const accessToken = await loginUser(email, password);
@@ -92,7 +161,19 @@ async function runTests() {
   }
 
   console.log('Step 4: Creating an empty workout session...');
-  await createWorkoutSession(accessToken, userId);
+  const workoutSessionId = await createWorkoutSession(accessToken, userId);
+
+  console.log('Step 5: Fetching all workout sessions...');
+  await fetchAllWorkoutSessions(accessToken);
+
+  console.log('Step 6: Fetching workout session by ID...');
+  await fetchWorkoutSessionById(accessToken, workoutSessionId);
+
+  console.log('Step 7: Fetching my workout sessions...');
+  await fetchMyWorkoutSessions(accessToken);
+
+  console.log('Step 8: Deleting the user...');
+  await deleteUser(accessToken, userId);
 }
 
 runTests();

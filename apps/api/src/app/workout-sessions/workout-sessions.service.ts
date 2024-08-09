@@ -270,6 +270,13 @@ export class WorkoutSessionsService {
     return await this.workoutSessionRepository.save(session);
   }
 
+  async findByUserId(userId: string): Promise<WorkoutSession[]> {
+    return this.workoutSessionRepository.find({
+      where: { userId },
+      relations: ['exercisesPerformed', 'exercisesPerformed.sets'],
+    });
+  }
+
   async updateSet(
     sessionId: string,
     exerciseId: string,
