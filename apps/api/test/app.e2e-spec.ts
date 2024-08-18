@@ -13,7 +13,7 @@ describe('WorkoutApp (e2e)', () => {
   let logger: Logger;
 
   beforeAll(async () => {
-    dotenv.config({ path: path.resolve(__dirname, '../../.env.test') });
+    dotenv.config({ path: path.resolve(__dirname, '../.env.test') });
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],

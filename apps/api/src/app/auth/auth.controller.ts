@@ -7,6 +7,7 @@ import {
   Get,
   Req,
   UseGuards,
+  HttpCode,
 } from '@nestjs/common';
 import { SupabaseService } from './supabase.service';
 import { SupabaseAuthGuard } from './supabase-auth.guard';
@@ -17,7 +18,6 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() registerDto: { email: string; password: string }) {
-    console.log('Register endpoint hit', registerDto);
     const { data, error } = await this.supabaseService.signUp(
       registerDto.email,
       registerDto.password
@@ -32,6 +32,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @HttpCode(200)
   async login(@Body() loginDto: { email: string; password: string }) {
     const { data, error } = await this.supabaseService.signInWithEmail(
       loginDto.email,

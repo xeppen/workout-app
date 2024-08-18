@@ -8,7 +8,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly supabaseService: SupabaseService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: process.env.SUPABASE_JWT_SECRET,
+      secretOrKey:
+        process.env.SUPABASE_JWT_SECRET || 'fallback_secret_for_tests',
     });
   }
 

@@ -4,6 +4,12 @@ import request from 'supertest';
 import { AppModule } from '../src/app/app.module';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { JwtStrategy } from '../src/app/auth/jwt.strategy';
+import { User } from '../src/app/users/entities/user.entity';
+import { MockAuthGuard } from './mock-auth.guard';
+import { SupabaseAuthGuard } from '../src/app/auth/supabase-auth.guard';
+import { SupabaseService } from '../src/app/auth/supabase.service';
+import { MockSupabaseService } from './mock-supabase.service';
 
 describe('WorkoutSession (e2e)', () => {
   let app: INestApplication;
@@ -15,11 +21,16 @@ describe('WorkoutSession (e2e)', () => {
   let setId: string;
 
   beforeAll(async () => {
-    dotenv.config({ path: path.resolve(__dirname, '../../.env.test') });
+    dotenv.config({ path: path.resolve(__dirname, '../.env.test') });
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideGuard(SupabaseAuthGuard)
+      .useClass(MockAuthGuard)
+      .overrideProvider(SupabaseService)
+      .useClass(MockSupabaseService)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
@@ -34,18 +45,20 @@ describe('WorkoutSession (e2e)', () => {
     }
   });
 
-  it('1. Create a user and an exercise', async () => {
-    // Create a user
+  it('1. Register a user and create an exercise', async () => {
     const userResponse = await request(app.getHttpServer())
-      .post('/users')
+      .post('/auth/register')
       .send({
-        name: 'John Doe',
         email: 'john@example.com',
         password: 'password123',
       })
       .expect(201);
 
-    userId = userResponse.body.id;
+    expect(userResponse.body).toHaveProperty('user');
+    expect(userResponse.body.user).toHaveProperty('id');
+    console.log('User registered:', userResponse.body.user);
+
+    userId = userResponse.body.user.id;
 
     // Create two exercises
     const exerciseResponse1 = await request(app.getHttpServer())

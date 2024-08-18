@@ -39,7 +39,7 @@
         "operationId": "AuthController_login",
         "parameters": [],
         "responses": {
-          "201": {
+          "200": {
             "description": ""
           }
         }

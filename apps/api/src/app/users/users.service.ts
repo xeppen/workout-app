@@ -57,7 +57,6 @@ export class UsersService {
     return await this.usersRepository.save(user);
   }
 
-  @Delete(':id')
   async remove(@Param('id') id: string, @Req() req) {
     // Ensure that a user can only delete their own profile
     if (id !== req.user.id) {

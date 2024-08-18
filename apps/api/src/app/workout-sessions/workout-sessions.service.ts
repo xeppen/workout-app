@@ -31,6 +31,8 @@ export class WorkoutSessionsService {
       sessionData.date = new Date().toDateString();
     }
 
+    console.log('Workout session data:', sessionData);
+
     return this.workoutSessionRepository.manager.transaction(
       async (transactionalEntityManager) => {
         const workoutSession = transactionalEntityManager.create(
@@ -38,6 +40,7 @@ export class WorkoutSessionsService {
           sessionData
         );
         await transactionalEntityManager.save(workoutSession);
+        console.log('Created workout session with ID:', workoutSession.id);
 
         if (exercisesPerformed && exercisesPerformed.length > 0) {
           for (let i = 0; i < exercisesPerformed.length; i++) {
@@ -85,6 +88,7 @@ export class WorkoutSessionsService {
           }
         );
 
+        console.log('Returning saved session:', savedSession);
         return savedSession;
       }
     );

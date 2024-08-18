@@ -47,17 +47,14 @@ export class SupabaseService implements OnModuleInit {
       email,
       password,
     });
-    console.log('Sign in response:', response);
     return response;
   }
 
   async signUp(email: string, password: string): Promise<AuthResponse> {
-    console.log(`Attempting to sign up user: ${email}`);
     const response = await this.getClient().auth.signUp({
       email,
       password,
     });
-    console.log('Sign up response:', response);
     return response;
   }
 

@@ -13,7 +13,7 @@ describe('Realistic WorkoutSession (e2e)', () => {
   let exercises: { [key: string]: string } = {};
 
   beforeAll(async () => {
-    dotenv.config({ path: path.resolve(__dirname, '../../.env.test') });
+    dotenv.config({ path: path.resolve(__dirname, '../.env.test') });
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],

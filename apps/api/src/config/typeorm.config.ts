@@ -9,6 +9,8 @@ import { ExercisePerformed } from '../app/workout-sessions/entities/exercise-per
 import { ExerciseInPlan } from '../app/workout-plans/entities/exercise-in-plan.entity';
 import { Set } from '../app/workout-sessions/entities/set.entity';
 import { Logger } from '@nestjs/common';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 const entities = [
   User,
@@ -24,18 +26,43 @@ const entities = [
 const logger = new Logger('TypeOrmConfig');
 
 export const getTypeOrmConfig = (): TypeOrmModuleOptions => {
+  if (process.env.NODE_ENV === 'test') {
+    dotenv.config({ path: path.resolve(__dirname, '../../.env.test') });
+  }
+
   logger.log(`NODE_ENV: ${process.env.NODE_ENV}`);
   logger.log(`USE_SUPABASE: ${process.env.USE_SUPABASE}`);
 
   if (process.env.NODE_ENV === 'test') {
-    logger.log('Using SQLite for testing');
-    return {
-      type: 'sqlite',
-      database: ':memory:',
-      entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-      synchronize: true,
-      logging: false,
-    };
+    if (process.env.USE_SUPABASE === 'true') {
+      logger.log('Using Supabase for testing');
+      if (!process.env.SUPABASE_DB_URL) {
+        throw new Error('SUPABASE_DB_URL is not set in .env.test');
+      }
+      const [, host] = process.env.SUPABASE_DB_URL.split('@');
+      logger.log(`Connecting to: ${host}`);
+
+      return {
+        type: 'postgres',
+        url: process.env.SUPABASE_DB_URL,
+        entities: entities,
+        synchronize: true, // Be cautious with this in a test environment
+        ssl: {
+          rejectUnauthorized: false,
+        },
+        logging: true,
+        logger: 'advanced-console',
+      };
+    } else {
+      logger.log('Using SQLite for testing');
+      return {
+        type: 'sqlite',
+        database: ':memory:',
+        entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+        synchronize: true,
+        logging: false,
+      };
+    }
   }
 
   if (
@@ -57,7 +84,7 @@ export const getTypeOrmConfig = (): TypeOrmModuleOptions => {
       logger: 'advanced-console',
       url: process.env.SUPABASE_DB_URL,
       entities: entities,
-      synchronize: true, // Set to false for Supabase
+      synchronize: false, // Set to false for Supabase
       ssl: {
         rejectUnauthorized: false, // Required for Supabase connections
       },
